@@ -39,7 +39,14 @@ Recommended: place the site behind **Cloudflare Zero Trust Access** on a subdoma
 
 ## Repository
 
-GitHub: [Pulsebet/integration-docs](https://github.com/Pulsebet/integration-docs)
+GitHub: [SparkSports-ai/integration-docs](https://github.com/SparkSports-ai/integration-docs)
+
+To host under `PulseBet/integration-docs`, a PulseBet org admin can create the empty repo and run:
+
+```bash
+git remote set-url origin https://github.com/PulseBet/integration-docs.git
+git push -u origin main
+```
 
 ## Content
 

@@ -4,7 +4,7 @@ export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
 export const gitConfig = {
-  user: 'Pulsebet',
+  user: 'SparkSports-ai',
   repo: 'integration-docs',
   branch: 'main',
 };
