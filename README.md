@@ -1,6 +1,6 @@
-# SparkSports Integration Docs
+# Spark Integration Docs
 
-Partner-facing technical documentation for casino operators integrating SparkSports streak games.
+Partner-facing technical documentation for casino operators integrating the **Spark** game with **SparkSports**.
 
 Built with [Fumadocs](https://fumadocs.dev) and Next.js.
 

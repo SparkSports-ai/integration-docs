@@ -3,7 +3,7 @@ title: Wallet API
 description: Endpoints your platform must expose for bets, wins, and rollbacks.
 ---
 
-During gameplay, SparkSports calls your wallet API to debit stakes, credit winnings, and roll back failed transactions. All calls are **synchronous** — we wait for your response before continuing.
+During Spark gameplay, SparkSports calls your wallet API to debit stakes, credit winnings, and roll back failed transactions. All calls are **synchronous** — we wait for your response before continuing.
 
 ## Authentication
 
@@ -44,7 +44,7 @@ POST {your-callback-base-url}/api/transaction/process
   "Amount": 10.00,
   "Type": 1,
   "ExternalTransactionId": "spark-tx-abc123",
-  "Description": "SparkSports streak bet",
+  "Description": "Spark streak bet",
   "GameId": "sparksports",
   "RoundId": "round-uuid-here",
   "PinCode": "player-unique-id",
@@ -56,9 +56,9 @@ POST {your-callback-base-url}/api/transaction/process
 | --- | --- |
 | `Amount` | Transaction amount (always positive) |
 | `Type` | `1` = Bet (debit), `2` = Win (credit), `3` = Rollback (refund bet) |
-| `ExternalTransactionId` | Our unique transaction ID — use for idempotency |
+| `ExternalTransactionId` | SparkSports transaction ID — use for idempotency |
 | `Description` | Human-readable description |
-| `GameId` | Always `"sparksports"` |
+| `GameId` | Spark integration identifier (always `"sparksports"`) |
 | `RoundId` | Unique round identifier (UUID) |
 | `PinCode` | Player identifier from the authenticate response |
 | `SessionId` | Active player session ID |

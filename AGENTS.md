@@ -1,6 +1,6 @@
 # Integration docs — agent instructions
 
-Partner-facing technical documentation for casino operators integrating SparkSports. This site is built with [Fumadocs](https://fumadocs.dev) and Next.js.
+Partner-facing technical documentation for casino operators integrating the Spark game with SparkSports. This site is built with [Fumadocs](https://fumadocs.dev) and Next.js.
 
 ## Project layout
 
@@ -46,15 +46,16 @@ After content changes, verify locally with `npm run dev` before pushing.
 
 ## Audience
 
-Casino operator backend teams implementing the SparkSports integration. Write for engineers who will build launch and wallet callback endpoints — not for end players.
+Casino operator backend teams implementing the Spark integration with SparkSports. Write for engineers who will build launch and wallet callback endpoints — not for end players.
 
 ## Terminology
 
 | Term | Usage |
 | --- | --- |
-| **SparkSports** | Product name |
+| **SparkSports** | The company (us, the provider) |
+| **Spark** | The game product — a live sports streak game |
 | **Operator / casino** | The integrating partner |
-| **Launch API** | SparkSports endpoint that returns an iframe URL |
+| **Launch API** | SparkSports endpoint that returns a Spark iframe URL |
 | **Callback / wallet API** | Endpoints the operator exposes for session validation and transactions |
 | **Pincode** | Operator's stable player identifier (returned from authenticate) |
 | **SessionId** | Operator's active player session token |
@@ -77,6 +78,8 @@ Casino operator backend teams implementing the SparkSports integration. Write fo
 - Environments (staging vs production URLs)
 - Security requirements and testing checklist
 - Onboarding deliverables (credentials, limits) described generically
+
+Use **Spark** when referring to the game. Use **SparkSports** when referring to the company, our APIs, or our services.
 
 **Do not include**
 

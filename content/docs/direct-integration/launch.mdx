@@ -1,9 +1,9 @@
 ---
 title: Launch the Game
-description: Request a signed iframe URL when a player opens SparkSports.
+description: Request a signed iframe URL when a player opens Spark.
 ---
 
-When a logged-in player opens SparkSports, your backend calls our launch endpoint to obtain a game URL.
+When a logged-in player opens Spark, your backend calls the SparkSports launch endpoint to obtain a game URL.
 
 ## Endpoint
 
@@ -31,7 +31,7 @@ HTTP Basic Auth using credentials provisioned during onboarding.
 }
 ```
 
-`SessionId` is your existing player session token. We use it to validate the player with your backend before issuing a game URL.
+`SessionId` is your existing player session token. SparkSports uses it to validate the player with your backend before issuing a game URL.
 
 ## Response
 
@@ -44,7 +44,7 @@ HTTP Basic Auth using credentials provisioned during onboarding.
 
 | Field | Description |
 | --- | --- |
-| `url` | Full iframe URL including a short-lived launch token |
+| `url` | Full iframe URL for Spark, including a short-lived launch token |
 | `expiresIn` | Token lifetime in seconds (default: 30) |
 
 The launch token is single-use and expires quickly. Request a fresh URL for each game session.
@@ -63,7 +63,7 @@ Load the returned URL in an iframe (recommended):
 ></iframe>
 ```
 
-Recommended dimensions: up to **1200 × 800 px**. The game is responsive within those bounds.
+Recommended dimensions: up to **1200 × 800 px**. Spark is responsive within those bounds.
 
 ## Errors
 

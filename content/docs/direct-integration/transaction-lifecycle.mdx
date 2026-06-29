@@ -1,9 +1,9 @@
 ---
 title: Transaction Lifecycle
-description: How bets, wins, and rollbacks flow through a game round.
+description: How bets, wins, and rollbacks flow through a Spark game round.
 ---
 
-Each game round has a unique `RoundId`. A round includes one bet and one or more win or rollback transactions.
+Each Spark round has a unique `RoundId`. A round includes one bet and one or more win or rollback transactions.
 
 ## Flow
 
@@ -33,7 +33,7 @@ Player starts streak
 
 ## End-to-end sequence
 
-1. Player opens SparkSports → your backend calls [Launch](/docs/direct-integration/launch).
+1. Player opens Spark → your backend calls [Launch](/docs/direct-integration/launch).
 2. SparkSports validates session via [Session validation](/docs/direct-integration/session-validation).
 3. Player loads iframe and starts a streak → **Type 1 (Bet)** debits stake.
 4. Player progresses through live market steps.

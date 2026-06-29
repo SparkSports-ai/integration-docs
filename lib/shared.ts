@@ -1,4 +1,4 @@
-export const appName = 'SparkSports Integration';
+export const appName = 'Spark Integration';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';

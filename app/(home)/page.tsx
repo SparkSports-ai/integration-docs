@@ -7,10 +7,10 @@ export default function HomePage() {
         SparkSports
       </p>
       <h1 className="mb-4 max-w-xl text-3xl font-bold tracking-tight md:text-4xl">
-        Partner Integration Documentation
+        Spark Integration Guide
       </h1>
       <p className="mb-8 max-w-lg text-fd-muted-foreground">
-        Technical reference for casino operators integrating SparkSports streak games.
+        Technical reference for casino operators integrating the Spark game with SparkSports.
       </p>
       <Link
         href="/docs"

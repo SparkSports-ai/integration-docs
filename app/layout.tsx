@@ -12,10 +12,10 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? 'https://partners.sparksports.ai',
   ),
   title: {
-    default: 'SparkSports Integration',
-    template: '%s | SparkSports Integration',
+    default: 'Spark Integration',
+    template: '%s | Spark Integration',
   },
-  description: 'Partner integration documentation for casino operators.',
+  description: 'Partner integration documentation for the Spark game.',
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {

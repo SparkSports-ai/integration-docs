@@ -1,9 +1,9 @@
 ---
 title: How Integration Works
-description: Architecture overview for integrating SparkSports into your casino platform.
+description: Architecture overview for integrating Spark with your casino platform.
 ---
 
-Integrating SparkSports requires your platform to implement two sides of a request/response flow: launching the game and settling wallet transactions.
+Integrating Spark requires your platform to implement two sides of a request/response flow: launching the game and settling wallet transactions. SparkSports provides the launch service and game iframe; you provide session validation and wallet settlement.
 
 ## Components
 
@@ -11,17 +11,17 @@ Integrating SparkSports requires your platform to implement two sides of a reque
 | --- | --- | --- |
 | **Your casino backend** | You | Calls our launch API; exposes session validation and wallet endpoints |
 | **SparkSports launcher** | SparkSports | Validates sessions, mints launch URLs |
-| **Game iframe** | SparkSports | Player-facing streak game loaded in your lobby |
+| **Spark game iframe** | SparkSports | Player-facing game loaded in your lobby |
 | **Your wallet API** | You | Debits stakes, credits wins, processes rollbacks |
 
 ## Launch flow
 
 ```
-Player clicks "Play"
+Player clicks "Play Spark"
   → Your backend → POST /api/game/launch
   → SparkSports → POST /api/generic/authenticate (your API)
   → SparkSports returns iframe URL
-  → Player loads game in iframe
+  → Player loads Spark in iframe
 ```
 
 See [Launch the game](/docs/direct-integration/launch) for request and response details.
@@ -46,12 +46,12 @@ See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle
 | `/api/generic/user/{pincode}/balance` | GET | Return live balance |
 | `/api/transaction/process` | POST | Process bet, win, and rollback |
 
-## What we provide
+## What SparkSports provides
 
 | Item | Description |
 | --- | --- |
 | Launch API credentials | HTTP Basic Auth for `POST /api/game/launch` |
-| Callback credentials | Credentials we use when calling your wallet API |
+| Callback credentials | Credentials SparkSports uses when calling your wallet API |
 | Staging environment | For development and QA before production go-live |
 | Operator limits | Stake bounds, win caps, and currency configuration |
 
