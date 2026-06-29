@@ -30,6 +30,10 @@ npm run types:check  # fumadocs-mdx + next typegen + tsc
 
 Do not run `npm install` on behalf of the user unless they ask — tell them what to install.
 
+Use **npm** (not bun) for this project. `tsconfig.json` must keep `jsx: "react-jsx"` and include `.next/dev/types/**/*.ts` — Next.js 16 requires these; do not revert to `jsx: "preserve"`.
+
+The `[MDX] generated files` line during `dev` / `build` is normal Fumadocs output, not an error.
+
 ## Editing documentation
 
 - Add or edit pages under `content/docs/` as `.mdx` files.
