@@ -3,7 +3,7 @@ title: Transaction Lifecycle
 description: How bets, wins, and rollbacks flow through a Spark game round.
 ---
 
-Each Spark round has a unique `RoundId`. A round includes one bet and one or more win or rollback transactions.
+Each round gets a `RoundId`. Most rounds have one bet and one win or rollback. Some paths add a zero-amount win on loss.
 
 ## Flow
 
@@ -11,35 +11,33 @@ Each Spark round has a unique `RoundId`. A round includes one bet and one or mor
 Player starts streak
         │
         ▼
-   Type 1 (Bet)          ← Debit stake from player wallet
+   Type 1 (Bet)          debit stake
         │
         ▼
    Player picks markets
         │
-        ├── Player loses ──► Type 2 (Win, amount=0) ──► Round closed
-        │
-        ├── Player cashes out ──► Type 2 (Win) ──► Credit winnings
-        │
-        └── Error / void ──► Type 3 (Rollback) ──► Refund original bet
+        ├── Player loses ──► Type 2 (Win, amount=0) ──► round done
+        ├── Player cashes out ──► Type 2 (Win) ──► credit winnings
+        └── Error / void ──► Type 3 (Rollback) ──► refund bet
 ```
 
 ## Transaction types
 
 | Type | Action | When |
 | --- | --- | --- |
-| `1` | Debit | Player starts a new streak |
-| `2` | Credit | Player cashes out or round ends |
-| `3` | Refund | Bet must be reversed due to error |
+| `1` | Debit | New streak starts |
+| `2` | Credit | Cashout or round ends |
+| `3` | Refund | Bet must be reversed |
 
-## End-to-end sequence
+## Typical sequence
 
-1. Player opens Spark → your backend calls [Launch](/docs/direct-integration/launch).
-2. SparkSports validates session via [Session validation](/docs/direct-integration/session-validation).
-3. Player loads iframe and starts a streak → **Type 1 (Bet)** debits stake.
-4. Player progresses through live market steps.
-5. On cashout or loss → **Type 2 (Win)** credits winnings (amount may be `0` on loss).
-6. On void/error → **Type 3 (Rollback)** refunds the original bet.
+1. Player opens Spark. Your backend calls [Launch](/docs/direct-integration/launch).
+2. We hit [Session validation](/docs/direct-integration/session-validation).
+3. Player starts a streak. Type 1 debits the stake.
+4. Player picks through live steps.
+5. Cashout or loss: Type 2 credits winnings (`0` on loss).
+6. Void or error: Type 3 refunds the original bet.
 
-## Retry behaviour
+## Retries
 
-SparkSports retries wallet calls on transient errors. Your API must be **idempotent** on `ExternalTransactionId` so duplicate retries do not double-charge or double-credit players.
+We retry wallet calls when the failure looks transient. Your handler must be idempotent on `ExternalTransactionId` so a retry never double-charges or double-credits.

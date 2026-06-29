@@ -3,19 +3,19 @@ title: Session Validation
 description: Endpoint your platform must expose so SparkSports can validate player sessions.
 ---
 
-Before returning a launch URL, SparkSports validates the player session by calling your backend.
+We call your backend before handing out a launch URL. If the session is not valid, the launch fails.
 
-## Endpoint you must implement
+## Your endpoint
 
 ```
 POST {your-callback-base-url}/api/generic/authenticate
 ```
 
-The callback base URL is configured during onboarding.
+You tell us the callback base URL during onboarding.
 
 ## Authentication
 
-HTTP Basic Auth using callback credentials provisioned during onboarding. SparkSports presents these credentials on every request.
+HTTP Basic Auth with the callback credentials we configure together. We send them on every call.
 
 ## Request
 
@@ -40,12 +40,12 @@ HTTP Basic Auth using callback credentials provisioned during onboarding. SparkS
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `SessionId` | Yes | Echo of the session ID we sent |
-| `Pincode` | Yes | Your stable player identifier |
+| `SessionId` | Yes | Same session ID we sent |
+| `Pincode` | Yes | Stable player ID on your side |
 | `Username` | Yes | Display name |
-| `Balance` | Yes | Current wallet balance |
-| `Currency` | Yes | ISO 4217 currency code (e.g. `USD`, `EUR`) |
-| `Country` | No | ISO 3166-1 alpha-2 country code |
+| `Balance` | Yes | Wallet balance at launch |
+| `Currency` | Yes | ISO 4217 code (`USD`, `EUR`, etc.) |
+| `Country` | No | ISO 3166-1 alpha-2 code |
 
 ## Error response
 
@@ -58,12 +58,12 @@ HTTP Basic Auth using callback credentials provisioned during onboarding. SparkS
 
 | ErrorCode | Meaning |
 | --- | --- |
-| `102` | Invalid or expired session |
-| `111` | Player is blocked |
-| `126` | Invalid credentials (configuration issue) |
+| `102` | Session invalid or expired |
+| `111` | Player blocked |
+| `126` | Bad credentials (usually a config mismatch on our side) |
 
 ## Notes
 
-- `Pincode` is the player identity used for all subsequent wallet calls.
-- Balance in the authenticate response is informational at launch — live balance is fetched via the [wallet API](/docs/direct-integration/wallet-api) during gameplay.
-- Never expose `SessionId` to client-side game code.
+- `Pincode` is the player key for all later wallet calls.
+- Balance at authenticate is a snapshot. During play we read balance from your [wallet API](/docs/direct-integration/wallet-api).
+- Keep `SessionId` on your backend. Do not pass it into client-side game code.

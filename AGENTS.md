@@ -1,6 +1,6 @@
-# Integration docs — agent instructions
+# Integration docs: agent instructions
 
-Partner-facing technical documentation for casino operators integrating the Spark game with SparkSports. This site is built with [Fumadocs](https://fumadocs.dev) and Next.js.
+Partner-facing technical documentation for casino operators integrating the Spark game with SparkSports. Built with [Fumadocs](https://fumadocs.dev) and Next.js.
 
 ## Project layout
 
@@ -21,16 +21,16 @@ integration-docs/
 ## Commands
 
 ```bash
-npm install          # install dependencies (run manually)
-npm run dev          # local preview at http://localhost:3000
-npm run build        # production build
-npm start            # serve production build (binds 0.0.0.0)
-npm run types:check  # fumadocs-mdx + next typegen + tsc
+bun install          # install dependencies (run manually)
+bun run dev          # local preview at http://localhost:3000
+bun run build        # production build
+bun start            # serve production build (binds 0.0.0.0)
+bun run types:check  # fumadocs-mdx + next typegen + tsc
 ```
 
-Do not run `npm install` on behalf of the user unless they ask — tell them what to install.
+Do not run `bun install` on behalf of the user unless they ask.
 
-Use **npm** (not bun) for this project. `tsconfig.json` must keep `jsx: "react-jsx"` and include `.next/dev/types/**/*.ts` — Next.js 16 requires these; do not revert to `jsx: "preserve"`.
+Use **bun** (not npm) for this project. `tsconfig.json` must keep `jsx: "react-jsx"` and include `.next/dev/types/**/*.ts`. Next.js 16 requires both; do not revert to `jsx: "preserve"`.
 
 The `[MDX] generated files` line during `dev` / `build` is normal Fumadocs output, not an error.
 
@@ -42,18 +42,36 @@ The `[MDX] generated files` line during `dev` / `build` is normal Fumadocs outpu
 - Use Fumadocs MDX components where helpful: `<Cards>`, `<Card>`, `<Callout>`, etc.
 - Internal links use paths like `/docs/direct-integration/launch`.
 
-After content changes, verify locally with `npm run dev` before pushing.
+After content changes, verify locally with `bun run dev` before pushing.
+
+## Humanizer (writing quality)
+
+When editing or adding prose, follow the [humanizer](https://github.com/blader/humanizer) skill. This is technical reference text: keep it plain and direct, not salesy or chatbot-polished.
+
+Apply these rules to partner-facing copy:
+
+- No em dashes or en dashes. Use commas, periods, or colons instead.
+- No filler openers ("This guide explains...", "Let's dive in...", "Here's what you need to know").
+- No significance inflation ("pivotal", "crucial", "landscape", "underscores").
+- No rule-of-three padding or synonym cycling ("robust, seamless, intuitive").
+- Minimal bold in body prose. Tables and inline code carry the structure.
+- Prefer "is" / "are" over "serves as" / "functions as".
+- Say who does what ("We call your API", "Your backend sends...") instead of passive vagueness.
+- Vary sentence length a little. Short sentences are fine in API docs.
+- Do not add opinions, humor, or first-person editorializing. Neutral engineer voice is correct here.
+
+Run a quick self-check before finishing: read the paragraph aloud. If it sounds like marketing copy or a ChatGPT tutorial, rewrite it.
 
 ## Audience
 
-Casino operator backend teams implementing the Spark integration with SparkSports. Write for engineers who will build launch and wallet callback endpoints — not for end players.
+Casino operator backend teams implementing the Spark integration with SparkSports. Write for engineers building launch and wallet callback endpoints, not for end players.
 
 ## Terminology
 
 | Term | Usage |
 | --- | --- |
 | **SparkSports** | The company (us, the provider) |
-| **Spark** | The game product — a live sports streak game |
+| **Spark** | The game product, a live sports streak game |
 | **Operator / casino** | The integrating partner |
 | **Launch API** | SparkSports endpoint that returns a Spark iframe URL |
 | **Callback / wallet API** | Endpoints the operator exposes for session validation and transactions |
@@ -63,12 +81,12 @@ Casino operator backend teams implementing the Spark integration with SparkSport
 
 ## Writing style
 
-- Active voice, second person ("you")
+- Second person ("you") where it fits; "we" for SparkSports actions
 - Sentence case for headings
-- Concise sentences — one idea each
-- Code blocks for HTTP requests, responses, and JSON bodies
-- Tables for field reference and error codes
-- Bold for UI labels; inline code for paths, headers, and field names
+- One idea per sentence when you can
+- Code blocks for HTTP, JSON, and HTML examples
+- Tables for fields and error codes
+- Inline code for paths, headers, and field names
 
 ## Content boundaries
 
@@ -79,7 +97,7 @@ Casino operator backend teams implementing the Spark integration with SparkSport
 - Security requirements and testing checklist
 - Onboarding deliverables (credentials, limits) described generically
 
-Use **Spark** when referring to the game. Use **SparkSports** when referring to the company, our APIs, or our services.
+Use **Spark** for the game. Use **SparkSports** for the company, our APIs, or our services.
 
 **Do not include**
 
@@ -93,9 +111,9 @@ This site may be shared with external casino partners. Treat every page as partn
 
 ## Deployment
 
-- Render web service — see `render.yaml`
-- Bind HTTP to `0.0.0.0:$PORT`
-- Deploy behind **Cloudflare Zero Trust Access** (or equivalent) — do not expose publicly
+- Render web service. See `render.yaml`.
+- Bind HTTP to `0.0.0.0:$PORT`.
+- Deploy behind Cloudflare Zero Trust Access (or equivalent). Do not expose publicly.
 
 ## Git
 

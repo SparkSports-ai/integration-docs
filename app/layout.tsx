@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     template: '%s | Spark Integration',
   },
   description: 'Partner integration documentation for the Spark game.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {

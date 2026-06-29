@@ -7,24 +7,23 @@ description: Requirements and best practices for a secure integration.
 
 | Requirement | Detail |
 | --- | --- |
-| **TLS** | All API communication must use HTTPS |
-| **Credential storage** | Store API credentials securely; rotate on compromise |
-| **Session isolation** | Never expose `SessionId` to client-side game code |
-| **Idempotency** | Deduplicate wallet transactions by `ExternalTransactionId` |
-| **Rate limits** | Launch API: 100 requests/second per operator |
+| TLS | HTTPS on every API call |
+| Credential storage | Treat launch and callback passwords like production secrets; rotate if leaked |
+| Session isolation | Do not expose `SessionId` to the game client |
+| Idempotency | Key wallet handling on `ExternalTransactionId` |
+| Rate limits | Launch API: 100 requests per second per operator |
 
 ## Launch tokens
 
-Launch URLs include a short-lived JWT (default **30 seconds**). Properties:
+Launch URLs carry a JWT that expires in about 30 seconds by default.
 
-- Single-use — request a fresh URL per session
-- Player balance is **not** embedded in the token
-- Balance is fetched live from your wallet API during gameplay
+- Request a new URL per session; do not reuse tokens
+- Balance is not in the JWT; we pull it from your wallet API during play
 
-## Optional: IP allowlisting
+## IP allowlisting (optional)
 
-SparkSports can provide outbound IP addresses for your firewall if you want to restrict wallet callback sources. Contact your integration partner during onboarding.
+If you want to lock down wallet callbacks to our egress IPs, ask during onboarding. We can send the addresses to allowlist.
 
-## Access to this documentation
+## This documentation site
 
-This site should be deployed behind an access gate (for example Cloudflare Zero Trust) so integration details are not publicly indexed. Credentials are always delivered out-of-band — never embedded in documentation.
+Run it behind an access gate (Cloudflare Zero Trust works well). Do not leave it public. Credentials always go out-of-band, never in these pages.

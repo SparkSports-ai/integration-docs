@@ -3,17 +3,17 @@ title: Launch the Game
 description: Request a signed iframe URL when a player opens Spark.
 ---
 
-When a logged-in player opens Spark, your backend calls the SparkSports launch endpoint to obtain a game URL.
+When a logged-in player opens Spark, your backend calls our launch endpoint and gets back a URL to load in an iframe.
 
 ## Endpoint
 
-**Production**
+Production:
 
 ```
 POST https://iframe-launcher.onrender.com/api/game/launch
 ```
 
-**Staging**
+Staging:
 
 ```
 POST https://iframe-launcher-staging.onrender.com/api/game/launch
@@ -21,7 +21,7 @@ POST https://iframe-launcher-staging.onrender.com/api/game/launch
 
 ## Authentication
 
-HTTP Basic Auth using credentials provisioned during onboarding.
+HTTP Basic Auth. We give you the username and password during onboarding.
 
 ## Request
 
@@ -31,7 +31,7 @@ HTTP Basic Auth using credentials provisioned during onboarding.
 }
 ```
 
-`SessionId` is your existing player session token. SparkSports uses it to validate the player with your backend before issuing a game URL.
+`SessionId` is whatever session token your platform already uses for that player. We pass it to your authenticate endpoint to confirm the session before issuing a URL.
 
 ## Response
 
@@ -44,14 +44,14 @@ HTTP Basic Auth using credentials provisioned during onboarding.
 
 | Field | Description |
 | --- | --- |
-| `url` | Full iframe URL for Spark, including a short-lived launch token |
-| `expiresIn` | Token lifetime in seconds (default: 30) |
+| `url` | Iframe URL for Spark, with a short-lived token in the query string |
+| `expiresIn` | Token lifetime in seconds (default 30) |
 
-The launch token is single-use and expires quickly. Request a fresh URL for each game session.
+Treat the token as single-use. Request a new URL each time someone starts a session.
 
 ## Embed the game
 
-Load the returned URL in an iframe (recommended):
+Put the URL in an iframe:
 
 ```html
 <iframe
@@ -63,13 +63,13 @@ Load the returned URL in an iframe (recommended):
 ></iframe>
 ```
 
-Recommended dimensions: up to **1200 × 800 px**. Spark is responsive within those bounds.
+1200 × 800 px works well as a max size. The UI scales down from there.
 
 ## Errors
 
 | HTTP | Meaning |
 | --- | --- |
-| `401` | Invalid launch credentials |
+| `401` | Bad launch credentials |
 | `400` | Missing `SessionId` |
-| `502` | Session validation failed (see [Session validation](/docs/direct-integration/session-validation)) |
-| `503` | Maintenance mode — launch temporarily disabled |
+| `502` | Session validation failed ([Session validation](/docs/direct-integration/session-validation)) |
+| `503` | Launch disabled (maintenance) |

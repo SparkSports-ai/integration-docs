@@ -1,8 +1,32 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 text-center">
+      {/* Soft brand-purple glow behind the hero */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-fd-primary/15 blur-[120px]"
+      />
+
+      <Image
+        src="/logo/light.svg"
+        alt="Spark"
+        width={180}
+        height={58}
+        className="mb-8 h-12 w-auto dark:hidden"
+        priority
+      />
+      <Image
+        src="/logo/dark.svg"
+        alt="Spark"
+        width={180}
+        height={58}
+        className="mb-8 hidden h-12 w-auto dark:block"
+        priority
+      />
+
       <p className="mb-2 text-sm font-medium uppercase tracking-widest text-fd-muted-foreground">
         SparkSports
       </p>
@@ -10,7 +34,7 @@ export default function HomePage() {
         Spark Integration Guide
       </h1>
       <p className="mb-8 max-w-lg text-fd-muted-foreground">
-        Technical reference for casino operators integrating the Spark game with SparkSports.
+        API reference for casinos wiring Spark into their platform.
       </p>
       <Link
         href="/docs"

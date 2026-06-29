@@ -3,30 +3,26 @@ title: Overview
 description: Integrate the Spark game into your casino platform.
 ---
 
-**Spark** is SparkSports' live sports streak game. Players pick outcomes across consecutive live markets, build a multiplier, and cash out before their streak ends.
+Spark is SparkSports' live sports streak game. Players pick outcomes across consecutive live markets, build a multiplier, and cash out before the streak ends.
 
-This guide explains how casino operators integrate Spark into their platform.
+If you operate a casino platform, you need three pieces in place:
 
-## What you build
+1. A way to request a game URL when a player opens Spark
+2. An endpoint that confirms the player session is still valid
+3. Wallet endpoints that handle bets, wins, and rollbacks
 
-Integration has three parts:
-
-1. **Game launch** — Your backend requests a game URL when a player opens Spark.
-2. **Session validation** — SparkSports validates the player session with your backend before loading the game.
-3. **Wallet callbacks** — SparkSports debits and credits player balances through synchronous HTTP calls to your API.
-
-There is no SDK and no webhook delivery. All communication is **synchronous HTTP over TLS**.
+There is no SDK and no webhooks. Everything runs over HTTPS with plain request/response calls.
 
 ## Player experience
 
-Spark runs in an **iframe** inside your casino lobby. Your backend never exposes wallet credentials to the browser — only a short-lived launch URL.
+Spark loads in an iframe in your lobby. The browser only gets a short-lived launch URL. Wallet credentials stay on your backend.
 
 <Cards>
-  <Card title="How integration works" href="/docs/how-it-works" description="Architecture and flow overview" />
-  <Card title="Launch the game" href="/docs/direct-integration/launch" description="Request a Spark iframe URL from SparkSports" />
-  <Card title="Wallet API" href="/docs/direct-integration/wallet-api" description="Endpoints your platform must expose" />
+  <Card title="How integration works" href="/docs/how-it-works" description="Who calls what, and when" />
+  <Card title="Launch the game" href="/docs/direct-integration/launch" description="Get a Spark iframe URL" />
+  <Card title="Wallet API" href="/docs/direct-integration/wallet-api" description="Endpoints you host" />
 </Cards>
 
-## Support
+## Getting set up
 
-For credential provisioning, staging access, and go-live coordination, contact your SparkSports integration partner.
+Ask your SparkSports contact for staging credentials, callback configuration, and go-live scheduling.

@@ -3,7 +3,7 @@ title: Environments
 description: Staging and production URLs for integration.
 ---
 
-Use **staging** for development and QA. Production credentials are separate and issued after staging sign-off.
+Build and test against staging first. Production credentials are separate and we usually hand them over after staging sign-off.
 
 ## Launch API
 
@@ -17,18 +17,16 @@ Use **staging** for development and QA. Production credentials are separate and 
 | Environment | URL |
 | --- | --- |
 | Staging | `https://staging.spark.sparksports.ai` |
-| Production | Provided at onboarding |
+| Production | Sent during onboarding |
 
-## Onboarding deliverables
-
-SparkSports provides per environment:
+## What we send per environment
 
 | Item | Description |
 | --- | --- |
-| Launch credentials | HTTP Basic Auth for `POST /api/game/launch` |
-| Callback credentials | HTTP Basic Auth for SparkSports → your wallet API |
-| Operator slug | Your unique operator identifier |
-| Stake limits | Minimum/maximum stake and preset amounts per currency |
-| Win caps | Maximum multiplier and maximum win amount |
+| Launch credentials | Basic Auth for `POST /api/game/launch` |
+| Callback credentials | Basic Auth for our calls to your wallet API |
+| Operator slug | Your operator identifier |
+| Stake limits | Min/max stake and preset amounts per currency |
+| Win caps | Max multiplier and max win amount |
 
-Contact your SparkSports integration partner to request staging access.
+Email your SparkSports contact to get staging access.

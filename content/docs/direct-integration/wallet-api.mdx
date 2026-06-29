@@ -3,23 +3,21 @@ title: Wallet API
 description: Endpoints your platform must expose for bets, wins, and rollbacks.
 ---
 
-During Spark gameplay, SparkSports calls your wallet API to debit stakes, credit winnings, and roll back failed transactions. All calls are **synchronous** — we wait for your response before continuing.
+While someone is playing Spark, we call your wallet API to move money. Every call is synchronous: we send the request, wait for your response, then continue or show an error to the player.
 
 ## Authentication
 
-All wallet endpoints use **HTTP Basic Auth** with callback credentials configured at onboarding.
-
----
+HTTP Basic Auth on all wallet endpoints, using the callback credentials from onboarding.
 
 ## Get balance
 
-Called when the game needs a live balance (for example after a failed transaction retry).
+We call this when we need a fresh balance, usually after a failed transaction retry.
 
 ```
 GET {your-callback-base-url}/api/generic/user/{pincode}/balance?sessionId={sessionId}
 ```
 
-**Success response**
+Response:
 
 ```json
 {
@@ -27,17 +25,15 @@ GET {your-callback-base-url}/api/generic/user/{pincode}/balance?sessionId={sessi
 }
 ```
 
----
-
 ## Process transaction
 
-Called for every bet, win, and rollback.
+One endpoint for bets, wins, and rollbacks.
 
 ```
 POST {your-callback-base-url}/api/transaction/process
 ```
 
-**Request body**
+Request body:
 
 ```json
 {
@@ -54,16 +50,16 @@ POST {your-callback-base-url}/api/transaction/process
 
 | Field | Description |
 | --- | --- |
-| `Amount` | Transaction amount (always positive) |
-| `Type` | `1` = Bet (debit), `2` = Win (credit), `3` = Rollback (refund bet) |
-| `ExternalTransactionId` | SparkSports transaction ID — use for idempotency |
-| `Description` | Human-readable description |
-| `GameId` | Spark integration identifier (always `"sparksports"`) |
-| `RoundId` | Unique round identifier (UUID) |
-| `PinCode` | Player identifier from the authenticate response |
-| `SessionId` | Active player session ID |
+| `Amount` | Always positive |
+| `Type` | `1` bet (debit), `2` win (credit), `3` rollback (refund) |
+| `ExternalTransactionId` | Our transaction ID; use this for idempotency |
+| `Description` | Free text |
+| `GameId` | Always `"sparksports"` |
+| `RoundId` | UUID for the round |
+| `PinCode` | From authenticate |
+| `SessionId` | Active player session |
 
-**Success response**
+Response:
 
 ```json
 {
@@ -75,9 +71,9 @@ POST {your-callback-base-url}/api/transaction/process
 
 ## Idempotency
 
-If you receive the same `ExternalTransactionId` twice, return the original result without processing again. This protects against network retries.
+Same `ExternalTransactionId` twice should return the same result without processing twice. We retry on network blips.
 
-## Error response
+## Errors
 
 ```json
 {
@@ -90,7 +86,7 @@ If you receive the same `ExternalTransactionId` twice, return the original resul
 | --- | --- | --- |
 | `102` | 403 | Session expired |
 | `111` | 403 | Player blocked |
-| `201` | 400 | Insufficient balance |
+| `201` | 400 | Not enough balance |
 | `202` | 400 | Duplicate transaction |
 
-SparkSports retries transient failures (network errors, 5xx responses) up to three times with exponential backoff. Non-retryable errors are surfaced to the player immediately.
+We retry transient failures (network errors, 5xx) up to three times with backoff. We do not retry insufficient balance or expired session; those go straight to the player.
