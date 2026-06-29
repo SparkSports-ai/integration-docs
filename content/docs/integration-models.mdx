@@ -1,0 +1,32 @@
+---
+title: Integration Models
+description: Choose the integration path that matches your platform setup.
+---
+
+SparkSports supports two integration paths.
+
+| Model | Best for | Your role |
+| --- | --- | --- |
+| **Direct integration** | Operators with their own wallet and player session system | Call our launch API and expose a wallet callback API |
+| **Via aggregator** | Operators on the Upgaming platform | Enable SparkSports in your back office — Upgaming handles the API layer |
+
+## Direct integration
+
+Your backend calls SparkSports to launch the game. SparkSports calls your backend to validate sessions and process wallet transactions.
+
+```
+Player clicks "Play"
+  → Your backend → POST /api/game/launch
+  → SparkSports → POST /api/generic/authenticate (your API)
+  → SparkSports returns iframe URL
+  → Player loads game in iframe
+  → SparkSports → wallet callbacks (bet / win / rollback)
+```
+
+See [Launch](/docs/direct-integration/launch) to get started.
+
+## Via Upgaming
+
+If your casino operates on **Upgaming**, you do not implement the APIs in this guide. Request SparkSports activation through Upgaming — they handle launch, wallet settlement, and routing.
+
+See [Upgaming](/docs/upgaming) for details.

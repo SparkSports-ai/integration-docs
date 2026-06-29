@@ -1,0 +1,4 @@
+{
+  "title": "Direct Integration",
+  "pages": ["launch", "session-validation", "wallet-api", "transaction-lifecycle"]
+}

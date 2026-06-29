@@ -1,0 +1,34 @@
+---
+title: Environments
+description: Staging and production URLs for integration.
+---
+
+Use **staging** for development and QA. Production credentials are separate and issued after staging sign-off.
+
+## Launch API
+
+| Environment | Base URL |
+| --- | --- |
+| Production | `https://iframe-launcher.onrender.com` |
+| Staging | `https://iframe-launcher-staging.onrender.com` |
+
+## Game frontend (iframe)
+
+| Environment | URL |
+| --- | --- |
+| Staging | `https://staging.spark.sparksports.ai` |
+| Production | Provided at onboarding |
+
+## Onboarding deliverables
+
+SparkSports provides per environment:
+
+| Item | Description |
+| --- | --- |
+| Launch credentials | HTTP Basic Auth for `POST /api/game/launch` |
+| Callback credentials | HTTP Basic Auth for SparkSports → your wallet API |
+| Operator slug | Your unique operator identifier |
+| Stake limits | Minimum/maximum stake and preset amounts per currency |
+| Win caps | Maximum multiplier and maximum win amount |
+
+Contact your SparkSports integration partner to request staging access.

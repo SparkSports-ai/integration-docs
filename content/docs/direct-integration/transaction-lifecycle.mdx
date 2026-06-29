@@ -1,0 +1,45 @@
+---
+title: Transaction Lifecycle
+description: How bets, wins, and rollbacks flow through a game round.
+---
+
+Each game round has a unique `RoundId`. A round includes one bet and one or more win or rollback transactions.
+
+## Flow
+
+```
+Player starts streak
+        │
+        ▼
+   Type 1 (Bet)          ← Debit stake from player wallet
+        │
+        ▼
+   Player picks markets
+        │
+        ├── Player loses ──► Type 2 (Win, amount=0) ──► Round closed
+        │
+        ├── Player cashes out ──► Type 2 (Win) ──► Credit winnings
+        │
+        └── Error / void ──► Type 3 (Rollback) ──► Refund original bet
+```
+
+## Transaction types
+
+| Type | Action | When |
+| --- | --- | --- |
+| `1` | Debit | Player starts a new streak |
+| `2` | Credit | Player cashes out or round ends |
+| `3` | Refund | Bet must be reversed due to error |
+
+## End-to-end sequence
+
+1. Player opens SparkSports → your backend calls [Launch](/docs/direct-integration/launch).
+2. SparkSports validates session via [Session validation](/docs/direct-integration/session-validation).
+3. Player loads iframe and starts a streak → **Type 1 (Bet)** debits stake.
+4. Player progresses through live market steps.
+5. On cashout or loss → **Type 2 (Win)** credits winnings (amount may be `0` on loss).
+6. On void/error → **Type 3 (Rollback)** refunds the original bet.
+
+## Retry behaviour
+
+SparkSports retries wallet calls on transient errors. Your API must be **idempotent** on `ExternalTransactionId` so duplicate retries do not double-charge or double-credit players.

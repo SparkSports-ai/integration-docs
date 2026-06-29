@@ -1,0 +1,75 @@
+---
+title: Launch the Game
+description: Request a signed iframe URL when a player opens SparkSports.
+---
+
+When a logged-in player opens SparkSports, your backend calls our launch endpoint to obtain a game URL.
+
+## Endpoint
+
+**Production**
+
+```
+POST https://iframe-launcher.onrender.com/api/game/launch
+```
+
+**Staging**
+
+```
+POST https://iframe-launcher-staging.onrender.com/api/game/launch
+```
+
+## Authentication
+
+HTTP Basic Auth using credentials provisioned during onboarding.
+
+## Request
+
+```json
+{
+  "SessionId": "your-player-session-id"
+}
+```
+
+`SessionId` is your existing player session token. We use it to validate the player with your backend before issuing a game URL.
+
+## Response
+
+```json
+{
+  "url": "https://game.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+  "expiresIn": 30
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `url` | Full iframe URL including a short-lived launch token |
+| `expiresIn` | Token lifetime in seconds (default: 30) |
+
+The launch token is single-use and expires quickly. Request a fresh URL for each game session.
+
+## Embed the game
+
+Load the returned URL in an iframe (recommended):
+
+```html
+<iframe
+  src="https://game.sparksports.ai/game/sparksports?jwt=..."
+  width="100%"
+  height="700"
+  frameborder="0"
+  allow="fullscreen"
+></iframe>
+```
+
+Recommended dimensions: up to **1200 × 800 px**. The game is responsive within those bounds.
+
+## Errors
+
+| HTTP | Meaning |
+| --- | --- |
+| `401` | Invalid launch credentials |
+| `400` | Missing `SessionId` |
+| `502` | Session validation failed (see [Session validation](/docs/direct-integration/session-validation)) |
+| `503` | Maintenance mode — launch temporarily disabled |

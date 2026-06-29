@@ -1,0 +1,38 @@
+---
+title: Testing Checklist
+description: Verify your integration before production go-live.
+---
+
+Complete this checklist in **staging** before requesting production credentials.
+
+## Launch
+
+- [ ] Launch API returns a valid game URL for an active player session
+- [ ] Launch API rejects invalid Basic Auth credentials
+- [ ] Launch API rejects requests with missing `SessionId`
+- [ ] Game loads correctly in iframe on desktop
+- [ ] Game loads correctly in iframe on mobile
+
+## Session validation
+
+- [ ] Authenticate endpoint returns player info for a valid session
+- [ ] Authenticate endpoint rejects expired sessions (`ErrorCode: 102`)
+- [ ] Authenticate endpoint rejects blocked players (`ErrorCode: 111`)
+
+## Wallet
+
+- [ ] Type 1 (Bet) debits the correct amount
+- [ ] Type 2 (Win) credits the correct amount
+- [ ] Type 2 with `amount=0` handled correctly on loss
+- [ ] Type 3 (Rollback) refunds the original bet
+- [ ] Duplicate `ExternalTransactionId` handled idempotently
+- [ ] Insufficient balance returns `ErrorCode: 201`
+- [ ] Balance endpoint returns current wallet balance
+
+## End-to-end
+
+- [ ] Full round: launch → bet → cashout → win credited
+- [ ] Full round: launch → bet → loss → round closed
+- [ ] Error path: bet rolled back on void
+
+When all items pass, contact your SparkSports integration partner to schedule production provisioning.

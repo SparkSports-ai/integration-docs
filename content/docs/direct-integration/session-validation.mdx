@@ -1,0 +1,69 @@
+---
+title: Session Validation
+description: Endpoint your platform must expose so SparkSports can validate player sessions.
+---
+
+Before returning a launch URL, SparkSports validates the player session by calling your backend.
+
+## Endpoint you must implement
+
+```
+POST {your-callback-base-url}/api/generic/authenticate
+```
+
+The callback base URL is configured during onboarding.
+
+## Authentication
+
+HTTP Basic Auth using callback credentials provisioned during onboarding. SparkSports presents these credentials on every request.
+
+## Request
+
+```json
+{
+  "SessionId": "your-player-session-id"
+}
+```
+
+## Success response
+
+```json
+{
+  "SessionId": "your-player-session-id",
+  "Pincode": "player-unique-id",
+  "Username": "john_doe",
+  "Balance": 1500.00,
+  "Currency": "USD",
+  "Country": "US"
+}
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `SessionId` | Yes | Echo of the session ID we sent |
+| `Pincode` | Yes | Your stable player identifier |
+| `Username` | Yes | Display name |
+| `Balance` | Yes | Current wallet balance |
+| `Currency` | Yes | ISO 4217 currency code (e.g. `USD`, `EUR`) |
+| `Country` | No | ISO 3166-1 alpha-2 country code |
+
+## Error response
+
+```json
+{
+  "ErrorCode": 102,
+  "Message": "Session expired"
+}
+```
+
+| ErrorCode | Meaning |
+| --- | --- |
+| `102` | Invalid or expired session |
+| `111` | Player is blocked |
+| `126` | Invalid credentials (configuration issue) |
+
+## Notes
+
+- `Pincode` is the player identity used for all subsequent wallet calls.
+- Balance in the authenticate response is informational at launch — live balance is fetched via the [wallet API](/docs/direct-integration/wallet-api) during gameplay.
+- Never expose `SessionId` to client-side game code.

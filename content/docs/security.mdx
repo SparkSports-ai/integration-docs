@@ -1,0 +1,30 @@
+---
+title: Security
+description: Requirements and best practices for a secure integration.
+---
+
+## Requirements
+
+| Requirement | Detail |
+| --- | --- |
+| **TLS** | All API communication must use HTTPS |
+| **Credential storage** | Store API credentials securely; rotate on compromise |
+| **Session isolation** | Never expose `SessionId` to client-side game code |
+| **Idempotency** | Deduplicate wallet transactions by `ExternalTransactionId` |
+| **Rate limits** | Launch API: 100 requests/second per operator |
+
+## Launch tokens
+
+Launch URLs include a short-lived JWT (default **30 seconds**). Properties:
+
+- Single-use — request a fresh URL per session
+- Player balance is **not** embedded in the token
+- Balance is fetched live from your wallet API during gameplay
+
+## Optional: IP allowlisting
+
+SparkSports can provide outbound IP addresses for your firewall if you want to restrict wallet callback sources. Contact your integration partner during onboarding.
+
+## Access to this documentation
+
+This site should be deployed behind an access gate (for example Cloudflare Zero Trust) so integration details are not publicly indexed. Credentials are always delivered out-of-band — never embedded in documentation.

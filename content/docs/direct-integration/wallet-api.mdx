@@ -1,0 +1,96 @@
+---
+title: Wallet API
+description: Endpoints your platform must expose for bets, wins, and rollbacks.
+---
+
+During gameplay, SparkSports calls your wallet API to debit stakes, credit winnings, and roll back failed transactions. All calls are **synchronous** — we wait for your response before continuing.
+
+## Authentication
+
+All wallet endpoints use **HTTP Basic Auth** with callback credentials configured at onboarding.
+
+---
+
+## Get balance
+
+Called when the game needs a live balance (for example after a failed transaction retry).
+
+```
+GET {your-callback-base-url}/api/generic/user/{pincode}/balance?sessionId={sessionId}
+```
+
+**Success response**
+
+```json
+{
+  "Balance": 1500.00
+}
+```
+
+---
+
+## Process transaction
+
+Called for every bet, win, and rollback.
+
+```
+POST {your-callback-base-url}/api/transaction/process
+```
+
+**Request body**
+
+```json
+{
+  "Amount": 10.00,
+  "Type": 1,
+  "ExternalTransactionId": "spark-tx-abc123",
+  "Description": "SparkSports streak bet",
+  "GameId": "sparksports",
+  "RoundId": "round-uuid-here",
+  "PinCode": "player-unique-id",
+  "SessionId": "your-player-session-id"
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `Amount` | Transaction amount (always positive) |
+| `Type` | `1` = Bet (debit), `2` = Win (credit), `3` = Rollback (refund bet) |
+| `ExternalTransactionId` | Our unique transaction ID — use for idempotency |
+| `Description` | Human-readable description |
+| `GameId` | Always `"sparksports"` |
+| `RoundId` | Unique round identifier (UUID) |
+| `PinCode` | Player identifier from the authenticate response |
+| `SessionId` | Active player session ID |
+
+**Success response**
+
+```json
+{
+  "TransactionId": 987654321,
+  "CurrentBalance": 1490.00,
+  "ExternalTransactionId": "spark-tx-abc123"
+}
+```
+
+## Idempotency
+
+If you receive the same `ExternalTransactionId` twice, return the original result without processing again. This protects against network retries.
+
+## Error response
+
+```json
+{
+  "ErrorCode": 201,
+  "Message": "Insufficient balance"
+}
+```
+
+| ErrorCode | HTTP | Meaning |
+| --- | --- | --- |
+| `102` | 403 | Session expired |
+| `111` | 403 | Player blocked |
+| `201` | 400 | Insufficient balance |
+| `202` | 400 | Duplicate transaction |
+
+SparkSports retries transient failures (network errors, 5xx responses) up to three times with exponential backoff. Non-retryable errors are surfaced to the player immediately.
