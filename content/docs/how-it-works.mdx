@@ -1,0 +1,58 @@
+---
+title: How Integration Works
+description: Architecture overview for integrating SparkSports into your casino platform.
+---
+
+Integrating SparkSports requires your platform to implement two sides of a request/response flow: launching the game and settling wallet transactions.
+
+## Components
+
+| Component | Owner | Role |
+| --- | --- | --- |
+| **Your casino backend** | You | Calls our launch API; exposes session validation and wallet endpoints |
+| **SparkSports launcher** | SparkSports | Validates sessions, mints launch URLs |
+| **Game iframe** | SparkSports | Player-facing streak game loaded in your lobby |
+| **Your wallet API** | You | Debits stakes, credits wins, processes rollbacks |
+
+## Launch flow
+
+```
+Player clicks "Play"
+  → Your backend → POST /api/game/launch
+  → SparkSports → POST /api/generic/authenticate (your API)
+  → SparkSports returns iframe URL
+  → Player loads game in iframe
+```
+
+See [Launch the game](/docs/direct-integration/launch) for request and response details.
+
+## Wallet flow
+
+During gameplay, SparkSports calls your wallet API synchronously:
+
+```
+Player starts streak   → Type 1 (Bet)     — debit stake
+Player cashes out      → Type 2 (Win)     — credit winnings
+Error / void           → Type 3 (Rollback) — refund bet
+```
+
+See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle](/docs/direct-integration/transaction-lifecycle).
+
+## What you implement
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/api/generic/authenticate` | POST | Validate player session at launch |
+| `/api/generic/user/{pincode}/balance` | GET | Return live balance |
+| `/api/transaction/process` | POST | Process bet, win, and rollback |
+
+## What we provide
+
+| Item | Description |
+| --- | --- |
+| Launch API credentials | HTTP Basic Auth for `POST /api/game/launch` |
+| Callback credentials | Credentials we use when calling your wallet API |
+| Staging environment | For development and QA before production go-live |
+| Operator limits | Stake bounds, win caps, and currency configuration |
+
+There is no SDK. All integration is **synchronous HTTP over TLS**.

@@ -2,13 +2,12 @@
   "title": "Integration Guide",
   "pages": [
     "index",
-    "integration-models",
+    "how-it-works",
     "---Direct Integration---",
     "...direct-integration",
     "---Reference---",
     "environments",
     "security",
-    "testing-checklist",
-    "upgaming"
+    "testing-checklist"
   ]
 }

@@ -10,8 +10,7 @@ export default function HomePage() {
         Partner Integration Documentation
       </h1>
       <p className="mb-8 max-w-lg text-fd-muted-foreground">
-        Technical reference for casino operators integrating SparkSports streak games via direct
-        API or through an aggregator.
+        Technical reference for casino operators integrating SparkSports streak games.
       </p>
       <Link
         href="/docs"
