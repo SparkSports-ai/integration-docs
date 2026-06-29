@@ -17,7 +17,8 @@ export const metadata: Metadata = {
   },
   description: 'Partner integration documentation for the Spark game.',
   icons: {
-    icon: '/favicon.svg',
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },
 };
 
