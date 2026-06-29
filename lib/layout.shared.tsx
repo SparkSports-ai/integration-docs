@@ -6,17 +6,24 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: (
-        <span className="flex items-center gap-2.5">
+        <>
           <Image
-            src="/spark-mark.svg"
-            alt=""
-            width={28}
-            height={28}
-            className="size-7 shrink-0"
+            src="/logo/light.svg"
+            alt={appName}
+            width={112}
+            height={36}
+            className="h-7 w-auto dark:hidden"
             priority
           />
-          <span className="font-medium">{appName}</span>
-        </span>
+          <Image
+            src="/logo/dark.svg"
+            alt={appName}
+            width={112}
+            height={36}
+            className="hidden h-7 w-auto dark:block"
+            priority
+          />
+        </>
       ),
     },
   };

@@ -6,30 +6,30 @@
  * Spark brand theme
  * Mirrors the palette used in the Spark Mintlify docs (docs.json):
  *   primary #4C00D2 · dark #753FE4 · accent #E1FF83
- * Fumadocs colors are expressed in HSL channels (no hsl() wrapper).
+ * Fumadocs expects full hsl() values for its color variables.
  */
 
 :root {
   /* #4C00D2 */
-  --color-fd-primary: 264 100% 41%;
-  --color-fd-primary-foreground: 0 0% 100%;
+  --color-fd-primary: hsl(262, 100%, 41%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
 
-  /* lime accent #E1FF83 used for hover/active surfaces */
-  --color-fd-accent: 76 100% 95%;
-  --color-fd-accent-foreground: 264 100% 24%;
+  /* pale lime tint (#E1FF83) for hover/active surfaces */
+  --color-fd-accent: hsl(76, 100%, 95%);
+  --color-fd-accent-foreground: hsl(262, 100%, 24%);
 
-  --color-fd-ring: 264 100% 41%;
+  --color-fd-ring: hsl(262, 100%, 41%);
 }
 
 .dark {
   /* lighter purple #753FE4 reads better on dark surfaces */
-  --color-fd-primary: 257 73% 57%;
-  --color-fd-primary-foreground: 0 0% 100%;
+  --color-fd-primary: hsl(258, 75%, 57%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
 
-  --color-fd-accent: 257 30% 18%;
-  --color-fd-accent-foreground: 76 100% 76%;
+  --color-fd-accent: hsl(258, 30%, 18%);
+  --color-fd-accent-foreground: hsl(76, 100%, 80%);
 
-  --color-fd-ring: 257 73% 57%;
+  --color-fd-ring: hsl(258, 75%, 57%);
 }
 
 /* Lime selection highlight echoes the brand accent (#E1FF83). */

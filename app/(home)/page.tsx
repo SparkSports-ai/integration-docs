@@ -11,11 +11,19 @@ export default function HomePage() {
       />
 
       <Image
-        src="/spark-mark.svg"
+        src="/logo/light.svg"
         alt="Spark"
-        width={72}
-        height={72}
-        className="mb-8 size-[72px]"
+        width={180}
+        height={58}
+        className="mb-8 h-12 w-auto dark:hidden"
+        priority
+      />
+      <Image
+        src="/logo/dark.svg"
+        alt="Spark"
+        width={180}
+        height={58}
+        className="mb-8 hidden h-12 w-auto dark:block"
         priority
       />
 
