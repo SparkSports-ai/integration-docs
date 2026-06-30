@@ -1,0 +1,26 @@
+---
+title: Changelog
+description: Revision history for the Spark Partner API and these docs.
+---
+
+So you always know which version you are reading.
+
+## v1.0 (draft) — 2026-06-30
+
+Proposed modernization of the integration contract. Consolidates our direct-operator and aggregator integrations into one clean API. **Not yet live** — items below need backend work before partners use them.
+
+- **Auth:** Bearer token everywhere, plus signed wallet/auth callbacks (`X-Spark-Signature` + `X-Spark-Timestamp`) with a 60s replay window. Replaces HTTP Basic Auth.
+- **Currency:** carried on the balance response and on every transaction. Was missing.
+- **Transaction types:** words `BET` / `WIN` / `ROLLBACK` instead of numeric `1` / `2` / `3`.
+- **Error codes:** string codes (`INSUFFICIENT_BALANCE`, `SESSION_EXPIRED`, ...) instead of numeric (`104`, `102`, ...); HTTP status is now the single routing signal.
+- **Linkage:** `WIN` / `ROLLBACK` reference the originating `BET` via `betTransactionId`. Losing round-close carries `reason` + `roundFinished`.
+- **Naming:** one consistent `playerId` (was `Pincode` / `PinCode`); `transactionId` (was `ExternalTransactionId`); dropped the constant `GameId`.
+- **Launch:** `expiresAt` (absolute UNIX timestamp) instead of `expiresIn` (relative seconds); corrected the inaccurate "single-use" claim.
+- **Idempotency, timeouts:** specified precisely (dedupe key, mismatch handling, 10s wallet timeout).
+- **Docs:** Mermaid diagrams for every flow.
+
+{/* v1: REVIEWER NOTE (strip before publish, like every other v1 comment). Each change above appears inline at its source as a v1-tagged MDX comment that explains what changed and why. These comments do NOT render on the site (they are JSX comments) and are removable in one pass with grep on the v1 tag across content/docs. The point is a reviewer can read the diff and see the rationale next to each change. */}
+
+## r0 — current live contract
+
+The BetLive-style direct integration: HTTP Basic Auth, numeric `Type` (`1`/`2`/`3`), numeric `ErrorCode`, no currency on transactions, `expiresIn`. Still what live operators use until v1 ships. We will keep a compatibility appendix for them.

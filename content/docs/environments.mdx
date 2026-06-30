@@ -23,10 +23,12 @@ Build and test against staging first. Production credentials are separate and we
 
 | Item | Description |
 | --- | --- |
-| Launch credentials | Basic Auth for `POST /api/game/launch` |
-| Callback credentials | Basic Auth for our calls to your wallet API |
+| Launch credentials | Bearer token for `POST /api/game/launch` |
+| Callback credentials | Bearer token + signing secret for our calls to your wallet API |
 | Operator slug | Your operator identifier |
 | Stake limits | Min/max stake and preset amounts per currency |
 | Win caps | Max multiplier and max win amount |
+
+{/* v1: credential rows now say Bearer + signing secret (were Basic Auth), matching the v1 auth model. */}
 
 Email your SparkSports contact to get staging access.

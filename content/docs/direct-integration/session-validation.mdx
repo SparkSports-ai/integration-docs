@@ -15,13 +15,15 @@ You tell us the callback base URL during onboarding.
 
 ## Authentication
 
-HTTP Basic Auth with the callback credentials we configure together. We send them on every call.
+{/* v1: was "HTTP Basic Auth". WHY: same Bearer + signature scheme as the wallet callbacks (this endpoint is a callback too). */}
+
+**Bearer token** plus the same request signature as the [wallet callbacks](/docs/direct-integration/wallet-api#authentication).
 
 ## Request
 
 ```json
 {
-  "SessionId": "your-player-session-id"
+  "sessionId": "your-player-session-id"
 }
 ```
 
@@ -29,41 +31,47 @@ HTTP Basic Auth with the callback credentials we configure together. We send the
 
 ```json
 {
-  "SessionId": "your-player-session-id",
-  "Pincode": "player-unique-id",
-  "Username": "john_doe",
-  "Balance": 1500.00,
-  "Currency": "USD",
-  "Country": "US"
+  "sessionId": "your-player-session-id",
+  "playerId": "player-unique-id",
+  "username": "john_doe",
+  "balance": 1500.00,
+  "currency": "USD",
+  "country": "US"
 }
 ```
+
+{/* v1: renamed Pincode -> playerId (one consistent name; the old doc used Pincode here and PinCode on the wallet call and had to apologize for it). lowercased the field keys to match the rest of v1. */}
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `SessionId` | Yes | Same session ID we sent |
-| `Pincode` | Yes | Stable player ID on your side |
-| `Username` | Yes | Display name |
-| `Balance` | Yes | Wallet balance at launch |
-| `Currency` | Yes | ISO 4217 code (`USD`, `EUR`, etc.) |
-| `Country` | No | ISO 3166-1 alpha-2 code |
+| `sessionId` | Yes | Same session id we sent |
+| `playerId` | Yes | Stable player id on your side. Used as the key on every later wallet call |
+| `username` | Yes | Display name |
+| `balance` | Yes | Wallet balance at launch |
+| `currency` | Yes | ISO 4217 code (`USD`, `EUR`, ...) |
+| `country` | No | ISO 3166-1 alpha-2 code |
 
 ## Error response
 
+{/* v1: numeric ErrorCode -> string error.code, consistent with launch and wallet. */}
+
 ```json
 {
-  "ErrorCode": 102,
-  "Message": "Session expired"
+  "error": {
+    "code": "SESSION_EXPIRED",
+    "message": "Session expired"
+  }
 }
 ```
 
-| ErrorCode | Meaning |
+| `error.code` | Meaning |
 | --- | --- |
-| `102` | Session invalid or expired |
-| `111` | Player blocked |
-| `126` | Bad credentials (usually a config mismatch on our side) |
+| `SESSION_EXPIRED` | Session invalid or expired |
+| `PLAYER_BLOCKED` | Player blocked |
+| `UNAUTHORIZED` | Bad bearer token or signature (usually a config mismatch) |
 
 ## Notes
 
-- `Pincode` is the player key for all later wallet calls.
+- `playerId` is the player key for all later wallet calls.
 - Balance at authenticate is a snapshot. During play we read balance from your [wallet API](/docs/direct-integration/wallet-api).
-- Keep `SessionId` on your backend. Do not pass it into client-side game code.
+- Keep `sessionId` on your backend. Do not pass it into client-side game code.

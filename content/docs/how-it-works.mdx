@@ -24,31 +24,33 @@ sequenceDiagram
     participant Backend as Your backend
     participant Spark as SparkSports
     Player->>Backend: Clicks Play Spark
-    Backend->>Spark: POST /api/game/launch
+    Backend->>Spark: POST /api/game/launch (Bearer)
     Spark->>Backend: POST /api/generic/authenticate
     Backend-->>Spark: Player profile
-    Spark-->>Backend: url + expiresIn
+    Spark-->>Backend: url + expiresAt
     Backend-->>Player: Loads Spark in iframe
 ```
 
-Your backend calls `POST /api/game/launch` with HTTP Basic Auth:
+{/* v1: diagram updated: launch is Bearer (was Basic Auth), response is expiresAt (was url + expiresIn). */}
+
+Your backend calls `POST /api/game/launch` with a Bearer token:
 
 ```json
 {
-  "SessionId": "your-player-session-id"
+  "sessionId": "your-player-session-id"
 }
 ```
 
-We validate that session by calling your `POST /api/generic/authenticate` with the same `SessionId`. Your endpoint returns the player profile:
+We validate that session by calling your `POST /api/generic/authenticate` with the same `sessionId`. Your endpoint returns the player profile:
 
 ```json
 {
-  "SessionId": "your-player-session-id",
-  "Pincode": "player-unique-id",
-  "Username": "john_doe",
-  "Balance": 1500.00,
-  "Currency": "USD",
-  "Country": "US"
+  "sessionId": "your-player-session-id",
+  "playerId": "player-unique-id",
+  "username": "john_doe",
+  "balance": 1500.00,
+  "currency": "USD",
+  "country": "US"
 }
 ```
 
@@ -57,7 +59,7 @@ If the session is valid, we return the iframe URL:
 ```json
 {
   "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
-  "expiresIn": 30
+  "expiresAt": 1782763200
 }
 ```
 
@@ -69,10 +71,13 @@ Full field tables and error codes are in [Launch the game](/docs/direct-integrat
 
 SparkSports calls your wallet API during play. We wait for your response before moving on.
 
-```
-Player starts streak   → Type 1 (Bet)      debit stake
-Player cashes out      → Type 2 (Win)      credit winnings
-Error / void           → Type 3 (Rollback) refund bet
+{/* v1: was an ASCII block with numeric Type 1/2/3. WHY: real diagram + word types, consistent with the rest of v1. */}
+
+```mermaid
+flowchart LR
+    A[Player starts streak] --> B["BET (debit stake)"]
+    C[Player cashes out] --> D["WIN (credit winnings)"]
+    E[Error or void] --> F["ROLLBACK (refund bet)"]
 ```
 
 See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle](/docs/direct-integration/transaction-lifecycle).
@@ -82,15 +87,15 @@ See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
 | `/api/generic/authenticate` | POST | Validate player session at launch |
-| `/api/generic/user/{pincode}/balance` | GET | Return live balance |
+| `/api/generic/user/{playerId}/balance` | GET | Return live balance |
 | `/api/transaction/process` | POST | Bet, win, rollback |
 
 ## What SparkSports sends you
 
 | Item | Description |
 | --- | --- |
-| Launch credentials | HTTP Basic Auth for `POST /api/game/launch` |
-| Callback credentials | Auth we use when calling your wallet API |
+| Launch credentials | Bearer token for `POST /api/game/launch` |
+| Callback credentials | Bearer token + signing secret for our calls to your wallet API |
 | Staging environment | For dev and QA before production |
 | Operator limits | Stake bounds, win caps, currency settings |
 

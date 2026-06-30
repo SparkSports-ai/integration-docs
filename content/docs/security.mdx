@@ -8,17 +8,24 @@ description: Requirements and best practices for a secure integration.
 | Requirement | Detail |
 | --- | --- |
 | TLS | HTTPS on every API call |
-| Credential storage | Treat launch and callback passwords like production secrets; rotate if leaked |
-| Session isolation | Do not expose `SessionId` to the game client |
-| Idempotency | Key wallet handling on `ExternalTransactionId` |
+| Bearer tokens | Treat launch and callback tokens like production secrets; rotate if leaked |
+| Signed callbacks | Verify the `X-Spark-Signature` on every callback; reject on mismatch |
+| Replay window | Reject callbacks whose `X-Spark-Timestamp` is older than 60 seconds |
+| Session isolation | Do not expose `sessionId` to the game client |
+| Idempotency | Key wallet handling on `transactionId` |
 | Launch usage | Request one launch URL per player session. Do not poll the endpoint |
+
+{/* v1: Bearer + signed-callbacks rows replace the old "Basic Auth password" row. WHY: a signature over the body with a timestamp gives message authentication and replay protection that Basic Auth cannot. */}
 
 ## Launch tokens
 
-Launch URLs carry a JWT that expires in about 30 seconds by default.
+{/* v1: corrected the old "do not reuse tokens / single-use" wording. WHY: the launch token is NOT single-use today, it is replayable within its lifetime. Stating it is single-use was inaccurate. Single-use enforcement is a tracked backend item; until then the real control is the short lifetime. */}
 
-- Request a new URL per session; do not reuse tokens
-- Balance is not in the JWT; we pull it from your wallet API during play
+Launch URLs carry a JWT that expires about 30 seconds after issue (`expiresAt` tells you exactly when).
+
+- Request a fresh URL per session; do not cache or share it.
+- The short lifetime is the control today. Per-token single-use enforcement is planned; until it ships, the token can technically be replayed inside its lifetime, so keep the URL server-to-client only and never log it.
+- Balance is not in the JWT; we pull it from your wallet API during play.
 
 ## IP allowlisting (optional)
 

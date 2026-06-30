@@ -5,34 +5,39 @@ description: Verify your integration before production go-live.
 
 Run through this in staging before asking for production keys.
 
+{/* v1: numeric Types/ErrorCodes swapped for the v1 words and string codes; added signature, currency, reason, and linkage checks. */}
+
 ## Launch
 
-- [ ] Valid session returns a game URL
-- [ ] Bad Basic Auth returns 401
-- [ ] Missing `SessionId` returns 400
+- [ ] Valid session returns a game URL with `expiresAt`
+- [ ] Bad bearer token returns `401 UNAUTHORIZED`
+- [ ] Missing `sessionId` returns `400 MISSING_SESSION_ID`
 - [ ] Game loads in iframe on desktop
 - [ ] Game loads in iframe on mobile
 
 ## Session validation
 
-- [ ] Valid session returns player fields from authenticate
-- [ ] Expired session returns `ErrorCode: 102`
-- [ ] Blocked player returns `ErrorCode: 111`
+- [ ] Valid session returns player fields including `currency`
+- [ ] Expired session returns `error.code: SESSION_EXPIRED`
+- [ ] Blocked player returns `error.code: PLAYER_BLOCKED`
+- [ ] Bad signature is rejected
 
 ## Wallet
 
-- [ ] Type 1 debits the right amount
-- [ ] Type 2 credits the right amount
-- [ ] Type 2 with amount `0` on loss
-- [ ] Type 3 refunds the original bet
-- [ ] Duplicate `ExternalTransactionId` is idempotent
-- [ ] Insufficient balance returns `ErrorCode: 104`
-- [ ] Balance endpoint matches wallet state
+- [ ] `BET` debits the right amount in the right `currency`
+- [ ] `WIN` credits the right amount
+- [ ] `WIN` amount `0` with `reason: loss` closes a losing round
+- [ ] `ROLLBACK` refunds the original bet (matched by `betTransactionId`)
+- [ ] Duplicate `transactionId` is idempotent (same response, no double move)
+- [ ] Reused `transactionId` with a different amount returns `DUPLICATE_MISMATCH`
+- [ ] Insufficient balance returns `400 INSUFFICIENT_BALANCE`
+- [ ] Balance endpoint returns `balance` and `currency` matching wallet state
+- [ ] Valid signature accepted, tampered body rejected
 
 ## End-to-end
 
-- [ ] Launch → bet → cashout → win on balance
-- [ ] Launch → bet → loss → round closes
+- [ ] Launch, bet, cashout, win lands on balance
+- [ ] Launch, bet, loss, round closes with `WIN` amount `0`
 - [ ] Bet rolled back on void
 
 When staging looks good, ping your SparkSports contact for production provisioning.

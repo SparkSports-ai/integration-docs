@@ -5,6 +5,8 @@ description: Request a signed iframe URL when a player opens Spark.
 
 When a logged-in player opens Spark, your backend calls our launch endpoint and gets back a URL to load in an iframe.
 
+<Callout type="info">**Proposed for v1.** Bearer auth and the absolute `expiresAt` field below are the target v1 contract and need backend work before they go live.</Callout>
+
 ## Endpoint
 
 Production:
@@ -21,33 +23,39 @@ POST https://iframe-launcher-staging.onrender.com/api/game/launch
 
 ## Authentication
 
-HTTP Basic Auth. We give you the username and password during onboarding.
+{/* v1: was "HTTP Basic Auth". WHY: matches the Bearer move across the rest of v1; one auth scheme for the whole contract instead of Basic here and Bearer elsewhere. */}
+
+**Bearer token** (`Authorization: Bearer <token>`). We issue it during onboarding.
 
 ## Request
 
 ```json
 {
-  "SessionId": "your-player-session-id"
+  "sessionId": "your-player-session-id"
 }
 ```
 
-`SessionId` is whatever session token your platform already uses for that player. We pass it to your authenticate endpoint to confirm the session before issuing a URL.
+`sessionId` is whatever session token your platform already uses for that player. We pass it to your authenticate endpoint to confirm the session before issuing a URL.
 
 ## Response
 
 ```json
 {
   "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
-  "expiresIn": 30
+  "expiresAt": 1782763200
 }
 ```
+
+{/* v1: was "expiresIn": 30 (relative seconds). WHY: relative seconds is ambiguous ("30s from when?") and the response latency eats into it. expiresAt is an absolute UNIX timestamp read straight from the JWT's exp claim, so it is the token's real expiry and is not affected by network delay. NOTE: expiresIn was never an Upgaming requirement; their spec returns { url } only. This field is for direct operators. */}
 
 | Field | Description |
 | --- | --- |
 | `url` | Iframe URL for Spark, with a short-lived token in the query string |
-| `expiresIn` | Token lifetime in seconds (default 30) |
+| `expiresAt` | Token expiry as a UNIX timestamp (seconds). Same value as the JWT `exp` claim |
 
-Treat the token as single-use. Request a new URL each time someone starts a session.
+{/* v1: removed "Treat the token as single-use." WHY: it was not true. The token is currently replayable within its ~30s lifetime; nothing consumes it. Single-use enforcement is a tracked backend item. Until it ships, the honest guidance is: short-lived, request a fresh one each session. */}
+
+The token is short-lived (about 30 seconds). Request a new URL each time a player opens Spark; do not cache or share it.
 
 ## Embed the game
 
@@ -63,14 +71,16 @@ Put the URL in an iframe:
 ></iframe>
 ```
 
-1200 × 800 px works well as a max size. The UI scales down from there.
+1200 x 800 px works well as a max size. The UI scales down from there.
 
 ## Errors
 
-| HTTP | Meaning |
-| --- | --- |
-| `400` | Missing `SessionId` |
-| `401` | Bad launch credentials |
-| `403` | Operator account inactive |
-| `502` | [Session validation](/docs/direct-integration/session-validation) failed. We also pass through the status your authenticate endpoint returned |
-| `503` | Launch disabled (maintenance) |
+{/* v1: numeric-free; HTTP status plus a string code, consistent with the wallet error model. */}
+
+| HTTP | `error.code` | Meaning |
+| --- | --- | --- |
+| `400` | `MISSING_SESSION_ID` | Request had no `sessionId` |
+| `401` | `UNAUTHORIZED` | Bad bearer token |
+| `403` | `OPERATOR_INACTIVE` | Operator account inactive |
+| `502` | `SESSION_VALIDATION_FAILED` | Your [authenticate](/docs/direct-integration/session-validation) call failed; we pass through the reason |
+| `503` | `LAUNCH_DISABLED` | Launch disabled (maintenance) |
