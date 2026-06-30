@@ -21,9 +21,11 @@ export function Mermaid({ chart }: { chart: string }) {
       transparent: true,
     });
 
+    // The SVG carries a viewBox, so force it to fill the content width and let
+    // height follow the aspect ratio.
     return (
       <div
-        className="my-4 flex justify-center overflow-x-auto"
+        className="my-4 w-full overflow-x-auto [&>svg]:!h-auto [&>svg]:!w-full"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     );

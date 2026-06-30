@@ -20,15 +20,15 @@ A player clicks "Play Spark" in your lobby. Four steps run before the game loads
 
 ```mermaid
 sequenceDiagram
-    participant Player
+    participant Client
     participant Backend as Your backend
     participant Spark as SparkSports
-    Player->>Backend: Clicks Play Spark
+    Client->>Backend: Clicks Play Spark
     Backend->>Spark: POST /api/game/launch
     Spark->>Backend: POST /api/generic/authenticate
     Backend-->>Spark: Player profile
     Spark-->>Backend: url + expiresIn
-    Backend-->>Player: Loads Spark in iframe
+    Backend-->>Client: Loads Spark in iframe
 ```
 
 Your backend calls `POST /api/game/launch` with HTTP Basic Auth:
@@ -56,7 +56,7 @@ If the session is valid, we return the iframe URL:
 
 ```json
 {
-  "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
   "expiresIn": 30
 }
 ```
