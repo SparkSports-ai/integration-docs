@@ -26,7 +26,7 @@ Request headers:
 | `X-Spark-Signature` | Hex HMAC-SHA256 signature |
 | `X-Spark-Request-Id` | Correlation id for support and reconciliation |
 
-Canonical string:
+Canonical string (`.` is a literal dot character between values):
 
 {/* v1: NEW canonical string. WHY: HMAC schemes fail interoperability when each side guesses a different canonicalization; binding method + path prevents replaying a valid signed body to a different endpoint. */}
 
@@ -91,9 +91,9 @@ Raw body:
 
 Canonical string:
 
-```text
-1782763200.POST./api/transaction/process.{"type":"BET","amount":"10.00","currency":"USD","transactionId":"spark-tx-abc123","roundId":"round-uuid-here","playerId":"player-unique-id","sessionId":"your-player-session-id"}
-```
+<CopyValue value={`1782763200.POST./api/transaction/process.{"type":"BET","amount":"10.00","currency":"USD","transactionId":"spark-tx-abc123","roundId":"round-uuid-here","playerId":"player-unique-id","sessionId":"your-player-session-id"}`} />
+
+{/* v1: replaced the canonical-string code fence with an explicit copy component. WHY: the built-in copy control can be unreliable on this single long raw-JSON line; partners need exact byte-for-byte copy for the golden vector. */}
 
 Expected `X-Spark-Signature`:
 
