@@ -9,20 +9,26 @@ learned running both a direct-operator (Basic Auth, numeric codes) and an aggreg
 (Bearer, signed callbacks) integration into one clean API.
 
 **What changed and why:**
-- **Bearer auth + signed wallet callbacks** instead of Basic Auth, so a request
-  authenticates the *message*, not just the channel, and cannot be replayed or tampered.
-- **Currency on every money object** (balance and each transaction). You cannot settle
-  money without knowing its currency.
+- **Bearer auth + signed callbacks** instead of Basic Auth. Callback signatures bind
+  timestamp, nonce, method, path, and raw body with HMAC-SHA256.
+- **Decimal-string money + currency** on every money object. Wallet calls must match the
+  session currency.
 - **Words instead of numbers** for transaction types (`BET` / `WIN` / `ROLLBACK`) and
   for error codes (`INSUFFICIENT_BALANCE`, `SESSION_EXPIRED`, ...), so the wire is
   self-documenting.
 - **Explicit linkage**: a `WIN` / `ROLLBACK` references the originating `BET`, and a
-  round-close carries a `reason` (`cashout` / `loss` / `cap`).
-- **Real diagrams** for every flow, a precise idempotency contract, and stated timeouts.
+  round-close carries a `reason` (`cashout` / `loss` / `cap`). A closed round cannot be
+  settled again.
+- **Durable idempotency, stated timeouts, and timeout-after-apply retry behavior** for
+  wallet calls.
+
+{/* v1: synced overview bullets with the hardened v1 scope. WHY: the landing page previously described only the earlier broad changes, so it under-represented the actual proposed contract: canonical HMAC, decimal strings, currency invariants, settlement-once, and durable idempotency. */}
 
 Items tagged **Proposed** below require backend work before they go live. Live
 integrations keep using the current contract until v1 ships. See the
 [Changelog](/docs/changelog) for revision history.
+
+{/* v1: backend sign-off required before publish. WHY: v1 now commits Spark to emitting X-Spark-Nonce, X-Spark-Request-Id, canonical HMAC signatures, RATE_LIMITED when throttling launch, and durable retry semantics. Those are correct target requirements but must be confirmed as backend scope, not only documentation changes. */}
 </Callout>
 
 Spark is SparkSports' live sports streak game. Players pick outcomes across consecutive live markets, build a multiplier, and cash out before the streak ends.

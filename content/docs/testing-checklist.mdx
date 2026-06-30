@@ -12,15 +12,25 @@ Run through this in staging before asking for production keys.
 - [ ] Valid session returns a game URL with `expiresAt`
 - [ ] Bad bearer token returns `401 UNAUTHORIZED`
 - [ ] Missing `sessionId` returns `400 MISSING_SESSION_ID`
+- [ ] Launch endpoint is not callable from browser code with exposed credentials
+- [ ] Full launch URL and JWT are absent from frontend logs, analytics, and crash reports
+- [ ] Support tools and screenshots do not expose launch URLs, bearer tokens, signing secrets, or wallet payloads
 - [ ] Game loads in iframe on desktop
 - [ ] Game loads in iframe on mobile
+
+{/* v1: added credential/log/support checks. WHY: casino incidents often start with stolen credentials or support/vendor access; a technically working launch is still unsafe if secrets land in browser code, logs, tickets, or screenshots. */}
 
 ## Session validation
 
 - [ ] Valid session returns player fields including `currency`
 - [ ] Expired session returns `error.code: SESSION_EXPIRED`
 - [ ] Blocked player returns `error.code: PLAYER_BLOCKED`
+- [ ] Responsible gaming block returns `error.code: RESPONSIBLE_GAMING_BLOCK`
 - [ ] Bad signature is rejected
+- [ ] `playerId` is stable and does not contain email, phone, government ID, or raw account number
+- [ ] Frozen, self-excluded, jurisdiction-blocked, and high-risk accounts cannot create playable sessions
+
+{/* v1: added responsible gaming, non-PII, and account-risk checks. WHY: account takeover and blocked-player leakage should fail before launch, not after the iframe opens or after the first bet. */}
 
 ## Wallet
 
@@ -30,14 +40,26 @@ Run through this in staging before asking for production keys.
 - [ ] `ROLLBACK` refunds the original bet (matched by `betTransactionId`)
 - [ ] Duplicate `transactionId` is idempotent (same response, no double move)
 - [ ] Reused `transactionId` with a different amount returns `DUPLICATE_MISMATCH`
+- [ ] Same `transactionId` submitted concurrently creates one wallet movement
+- [ ] `WIN` or `ROLLBACK` after round settlement returns `ROUND_ALREADY_SETTLED`
+- [ ] Wrong currency returns `CURRENCY_MISMATCH`
 - [ ] Insufficient balance returns `400 INSUFFICIENT_BALANCE`
 - [ ] Balance endpoint returns `balance` and `currency` matching wallet state
 - [ ] Valid signature accepted, tampered body rejected
+- [ ] Replayed nonce inside the timestamp window is rejected
+- [ ] Request with old timestamp is rejected
+- [ ] Timeout followed by retry returns the applied transaction if money moved
+- [ ] Wallet service restart or pod failover does not lose idempotency state
+
+{/* v1: added concurrency, settlement, replay, timeout, and failover checks. WHY: outage recovery is where real-money APIs drift unless idempotency is durable outside one process. */}
 
 ## End-to-end
 
 - [ ] Launch, bet, cashout, win lands on balance
 - [ ] Launch, bet, loss, round closes with `WIN` amount `0`
 - [ ] Bet rolled back on void
+- [ ] All wallet logs include `X-Spark-Request-Id`, `transactionId`, `roundId`, and `playerId`
+
+{/* v1: added observability check. WHY: when money movement fails, support needs correlation ids immediately without asking for sensitive payload screenshots. */}
 
 When staging looks good, ping your SparkSports contact for production provisioning.

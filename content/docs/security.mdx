@@ -8,14 +8,28 @@ description: Requirements and best practices for a secure integration.
 | Requirement | Detail |
 | --- | --- |
 | TLS | HTTPS on every API call |
+| Protocol version | TLS 1.2 or newer; TLS 1.3 preferred |
 | Bearer tokens | Treat launch and callback tokens like production secrets; rotate if leaked |
-| Signed callbacks | Verify the `X-Spark-Signature` on every callback; reject on mismatch |
-| Replay window | Reject callbacks whose `X-Spark-Timestamp` is older than 60 seconds |
+| Signed callbacks | Verify the `X-Spark-Signature` on every callback using the exact raw request body |
+| Replay window | Reject callbacks whose `X-Spark-Timestamp` is outside the 60-second window |
+| Replay nonce | Reject repeated `X-Spark-Nonce` values inside the replay window |
 | Session isolation | Do not expose `sessionId` to the game client |
 | Idempotency | Key wallet handling on `transactionId` |
+| Atomic ledger | Apply idempotency and wallet movement in one database transaction |
 | Launch usage | Request one launch URL per player session. Do not poll the endpoint |
+| Logging | Never log bearer tokens, signing secrets, launch JWTs, full iframe URLs, or raw wallet payloads containing player ids |
 
 {/* v1: Bearer + signed-callbacks rows replace the old "Basic Auth password" row. WHY: a signature over the body with a timestamp gives message authentication and replay protection that Basic Auth cannot. */}
+{/* v1: added TLS version, nonce, atomic ledger, and logging requirements. WHY: these are baseline controls for money-moving APIs: modern transport, replay protection inside the timestamp window, no double movement under concurrency, and no credential leakage through logs. */}
+
+## Operational controls
+
+- Launch and session validation must fail for frozen, self-excluded, jurisdiction-blocked, or high-risk accounts.
+- Support tools must not expose launch URLs, bearer tokens, signing secrets, or full wallet payloads.
+- Logs must redact secrets and use correlation ids for reconciliation.
+- Wallet idempotency state must survive service restarts, deploys, and pod failover.
+
+{/* v1: NEW operational controls. WHY: kept visible text as partner-facing requirements, but these controls come from common betting/casino incident patterns: account takeover, support/vendor credential exposure, sensitive screenshots/logs, and outage recovery causing ledger drift. */}
 
 ## Launch tokens
 
@@ -27,9 +41,57 @@ Launch URLs carry a JWT that expires about 30 seconds after issue (`expiresAt` t
 - The short lifetime is the control today. Per-token single-use enforcement is planned; until it ships, the token can technically be replayed inside its lifetime, so keep the URL server-to-client only and never log it.
 - Balance is not in the JWT; we pull it from your wallet API during play.
 
-## IP allowlisting (optional)
+## Wallet callback signatures
 
-If you want to lock down wallet callbacks to our egress IPs, ask during onboarding. We can send the addresses to allowlist.
+Verify signatures before parsing the request as trusted input. Use constant-time comparison for signature equality. Store recently seen nonces for at least the replay window. If your infrastructure terminates TLS before the application, make sure the app still receives the original path and query string used in the signature.
+
+Clock drift causes false rejects, so keep servers synchronized with NTP. If your clock is out by more than 60 seconds, fix the clock rather than widening the replay window.
+
+{/* v1: NEW signature operations section. WHY: operators need implementation details that prevent common HMAC mistakes: normal string compare timing, missing nonce storage, and proxy path rewriting. */}
+
+## Idempotency and ledger safety
+
+Wallet movement must be atomic:
+
+1. Check whether `transactionId` already exists.
+2. If it exists with the same immutable fields, return the stored response.
+3. If it exists with different immutable fields, return `DUPLICATE_MISMATCH`.
+4. Otherwise apply the debit/credit/refund and store the response in the same database transaction.
+
+Do not implement dedupe in process memory. Retries and concurrent requests can hit different pods.
+
+{/* v1: NEW ledger safety section. WHY: idempotency is only meaningful if it is enforced in the same durable transaction as the wallet movement. */}
+
+## IP allowlisting
+
+If you want to lock down wallet callbacks to our egress IPs, ask during onboarding. We can send the addresses to allowlist. IP allowlisting is defense in depth; it does not replace bearer auth or request signatures.
+
+{/* v1: clarified IP allowlisting. WHY: source IP controls are useful but brittle behind proxies and should not be treated as the primary authentication layer. */}
+
+## Secret rotation
+
+Keep separate credentials for staging and production. Rotate immediately if a token, signing secret, or launch URL appears in logs, tickets, analytics, or screenshots.
+
+Preferred rotation pattern:
+
+1. Add the new token/secret while the old one still works.
+2. Switch traffic to the new credential.
+3. Confirm signed callbacks and launch calls in staging/production logs.
+4. Disable the old credential.
+
+{/* v1: NEW rotation runbook. WHY: betting integrations need no-downtime rotation; replacing one static secret instantly can break wallet settlement mid-session. */}
+
+## Player data and support tooling
+
+Use opaque player ids. Do not send PII unless we explicitly agree it is required. For support and reconciliation, use `X-Spark-Request-Id`, `transactionId`, `roundId`, and `operatorTransactionId`; these are safer and more precise than screenshots with full payloads.
+
+{/* v1: NEW player-data/support guidance. WHY: support workflows often leak payload screenshots; correlation ids solve the same debugging need with less personal data exposure. */}
+
+## Responsible gaming and blocking
+
+If a player is blocked, self-excluded, cooling off, over a limit, or outside an allowed jurisdiction, return `PLAYER_BLOCKED` or `RESPONSIBLE_GAMING_BLOCK` from session validation or wallet calls. Do not let the player open a new Spark session and then fail only after the first bet.
+
+{/* v1: NEW responsible-gaming guidance. WHY: player protection checks should happen before play starts, not after a bet attempt, to avoid bad user experience and regulatory ambiguity. */}
 
 ## This documentation site
 

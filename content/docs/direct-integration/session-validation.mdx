@@ -17,7 +17,9 @@ You tell us the callback base URL during onboarding.
 
 {/* v1: was "HTTP Basic Auth". WHY: same Bearer + signature scheme as the wallet callbacks (this endpoint is a callback too). */}
 
-**Bearer token** plus the same request signature as the [wallet callbacks](/docs/direct-integration/wallet-api#authentication).
+**Bearer token** plus the same request signature as the [wallet callbacks](/docs/direct-integration/wallet-api#authentication). Validate the signature before trusting `sessionId`.
+
+{/* v1: explicitly says to verify before trust. WHY: session validation is the gate before issuing a launch URL, so treating an unsigned sessionId as trusted would let a forged callback mint a playable session. */}
 
 ## Request
 
@@ -34,9 +36,13 @@ You tell us the callback base URL during onboarding.
   "sessionId": "your-player-session-id",
   "playerId": "player-unique-id",
   "username": "john_doe",
-  "balance": 1500.00,
+  "balance": "1500.00",
   "currency": "USD",
-  "country": "US"
+  "country": "US",
+  "limits": {
+    "minStake": "1.00",
+    "maxStake": "100.00"
+  }
 }
 ```
 
@@ -47,9 +53,24 @@ You tell us the callback base URL during onboarding.
 | `sessionId` | Yes | Same session id we sent |
 | `playerId` | Yes | Stable player id on your side. Used as the key on every later wallet call |
 | `username` | Yes | Display name |
-| `balance` | Yes | Wallet balance at launch |
+| `balance` | Yes | Wallet balance at launch, as a decimal string |
 | `currency` | Yes | ISO 4217 code (`USD`, `EUR`, ...) |
 | `country` | No | ISO 3166-1 alpha-2 code |
+| `limits` | No | Operator-side stake limits if they are narrower than the configured Spark limits |
+
+{/* v1: removed displayCurrency from the visible contract. WHY: unless the game is confirmed to render a separate display currency from settlement currency, documenting this implies a product feature we may not actually support. Keep v1 scoped to settlement currency only. */}
+
+`playerId` must be stable and non-PII. Do not send email, phone, government ID, or a raw account number as `playerId`. If your internal id is sensitive, send an opaque stable alias.
+
+{/* v1: added non-PII playerId guidance. WHY: support and analytics need a stable key, but gambling integrations should avoid sending unnecessary personal data across systems. */}
+
+The `currency` returned here is the wallet settlement currency for the session. Later wallet calls for the same session must use the same currency.
+
+{/* v1: added session-currency invariant. WHY: every wallet transaction must reconcile to the same session currency; changing currency mid-session is a settlement bug. */}
+
+If `limits` are returned, Spark applies the stricter of the configured Spark limits and the session response limits. Session response limits may narrow configured limits, but they cannot widen them.
+
+{/* v1: added limits precedence. WHY: reviewer feedback correctly called out that operator-returned limits need an explicit rule; "narrower wins" prevents one session response from accidentally exceeding the configured operator risk limits. */}
 
 ## Error response
 
@@ -68,10 +89,14 @@ You tell us the callback base URL during onboarding.
 | --- | --- |
 | `SESSION_EXPIRED` | Session invalid or expired |
 | `PLAYER_BLOCKED` | Player blocked |
+| `RESPONSIBLE_GAMING_BLOCK` | Player is blocked by cool-off, self-exclusion, jurisdiction, or limit policy |
 | `UNAUTHORIZED` | Bad bearer token or signature (usually a config mismatch) |
+
+{/* v1: added RESPONSIBLE_GAMING_BLOCK. WHY: regulated operators usually distinguish technical/session failure from policy blocks such as self-exclusion or jurisdiction controls. */}
 
 ## Notes
 
 - `playerId` is the player key for all later wallet calls.
 - Balance at authenticate is a snapshot. During play we read balance from your [wallet API](/docs/direct-integration/wallet-api).
 - Keep `sessionId` on your backend. Do not pass it into client-side game code.
+- If a session expires while the iframe is open, return `SESSION_EXPIRED` from wallet calls; we will stop play and ask the player to relaunch.

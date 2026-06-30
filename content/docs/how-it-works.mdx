@@ -25,13 +25,13 @@ sequenceDiagram
     participant Spark as SparkSports
     Player->>Backend: Clicks Play Spark
     Backend->>Spark: POST /api/game/launch (Bearer)
-    Spark->>Backend: POST /api/generic/authenticate
-    Backend-->>Spark: Player profile
+    Spark->>Backend: POST /api/generic/authenticate (Bearer + signature)
+    Backend-->>Spark: Player profile + currency + optional limits
     Spark-->>Backend: url + expiresAt
     Backend-->>Player: Loads Spark in iframe
 ```
 
-{/* v1: diagram updated: launch is Bearer (was Basic Auth), response is expiresAt (was url + expiresIn). */}
+{/* v1: diagram updated: launch is Bearer (was Basic Auth), authenticate is signed, response is expiresAt (was url + expiresIn), and the profile carries currency/optional limits. WHY: the overview must match the detailed v1 callback and session-validation contract. */}
 
 Your backend calls `POST /api/game/launch` with a Bearer token:
 
@@ -48,11 +48,17 @@ We validate that session by calling your `POST /api/generic/authenticate` with t
   "sessionId": "your-player-session-id",
   "playerId": "player-unique-id",
   "username": "john_doe",
-  "balance": 1500.00,
+  "balance": "1500.00",
   "currency": "USD",
-  "country": "US"
+  "country": "US",
+  "limits": {
+    "minStake": "1.00",
+    "maxStake": "100.00"
+  }
 }
 ```
+
+{/* v1: profile example synced with session-validation. WHY: balance must be a decimal string and limits may narrow operator stake bounds. displayCurrency was removed because it implies separate display-currency rendering that needs product confirmation before it belongs in the partner contract. */}
 
 If the session is valid, we return the iframe URL:
 
@@ -90,12 +96,16 @@ See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle
 | `/api/generic/user/{playerId}/balance` | GET | Return live balance |
 | `/api/transaction/process` | POST | Bet, win, rollback |
 
+Your callback endpoints use Bearer auth plus `X-Spark-Signature`, `X-Spark-Timestamp`, `X-Spark-Nonce`, and `X-Spark-Request-Id`.
+
+{/* v1: added callback header summary. WHY: the overview previously mentioned only credentials in onboarding, leaving the new nonce/request-id signature fields hidden in leaf pages. */}
+
 ## What SparkSports sends you
 
 | Item | Description |
 | --- | --- |
 | Launch credentials | Bearer token for `POST /api/game/launch` |
-| Callback credentials | Bearer token + signing secret for our calls to your wallet API |
+| Callback credentials | Bearer token + HMAC-SHA256 signing secret for our calls to your callback endpoints |
 | Staging environment | For dev and QA before production |
 | Operator limits | Stake bounds, win caps, currency settings |
 

@@ -11,15 +11,47 @@ While someone is playing Spark, we call your wallet API to move money. Every cal
 
 ## Authentication
 
-{/* v1: was "HTTP Basic Auth". WHY change: Basic Auth ships a static password in every request and only authenticates the channel. A Bearer token plus a per-request signature authenticates the message itself, so a callback cannot be replayed or tampered (this is what the Upgaming integration already does with an SHA-512 signature). */}
+{/* v1: was "HTTP Basic Auth". WHY change: Basic Auth ships a static password in every request and only authenticates the channel. A Bearer token plus a per-request signature authenticates the message itself, so a callback cannot be replayed or tampered. Our Upgaming integration uses an SHA-512 signature; v1 deliberately standardizes on HMAC-SHA256 (the modern default; for HMAC it is not weaker than SHA-512). Pick one and keep it consistent across the contract. */}
 
-**Bearer token** on every wallet call (`Authorization: Bearer <token>`), plus a **request signature**. We sign the raw request body with a shared secret and send the digest in `X-Spark-Signature`, with the send time in `X-Spark-Timestamp`. Verify both: recompute the signature over the received body and reject if it does not match or the timestamp is older than 60 seconds.
+**Bearer token** on every wallet call (`Authorization: Bearer <token>`), plus a **request signature**. We sign the raw request target, timestamp, nonce, and raw request body with a shared secret.
+
+Request headers:
+
+{/* v1: NEW header table. WHY: betting operators need an exact checklist for gateway/middleware implementation, and support needs one stable request id to join Spark logs with operator logs. */}
+
+| Header | Description |
+| --- | --- |
+| `Authorization` | `Bearer <token>` |
+| `X-Spark-Timestamp` | UNIX timestamp in seconds |
+| `X-Spark-Nonce` | Unique random id for this request |
+| `X-Spark-Signature` | Hex HMAC-SHA256 signature |
+| `X-Spark-Request-Id` | Correlation id for support and reconciliation |
+
+Canonical string:
+
+{/* v1: NEW canonical string. WHY: HMAC schemes fail interoperability when each side guesses a different canonicalization; binding method + path prevents replaying a valid signed body to a different endpoint. */}
+
+```text
+{timestamp}.{nonce}.{METHOD}.{path-and-query}.{rawBody}
+```
+
+Verify all of it:
+
+{/* v1: NEW verification checklist. WHY: timestamp alone limits old replay, nonce blocks immediate replay inside the valid clock window, and raw-body verification prevents JSON parser differences from changing what was signed. */}
+
+- Recompute the HMAC over the exact raw body bytes you received; do not re-serialize JSON before verifying.
+- Reject if the signature does not match.
+- Reject if `X-Spark-Timestamp` is more than 60 seconds away from your server clock.
+- Reject a repeated `X-Spark-Nonce` within the timestamp window.
+- Log `X-Spark-Request-Id`, `transactionId`, `roundId`, and `playerId` on every wallet call.
+
+{/* v1: tightened "Bearer + signature" into a concrete canonicalization rule. WHY: "sign the body" alone leaves room for incompatible implementations and replay bugs; nonce + method/path binding prevents replaying a valid body against another endpoint. */}
 
 ## Timeouts
 
 {/* v1: NEW. WHY: the calls are synchronous and we block on them, but the old doc never stated how long we wait. Operators need a number to design against. */}
 
-We wait **up to 10 seconds** for a wallet response. No response in time is treated as a transient failure and retried (see [Retries](#retries)). Keep wallet handlers fast.
+We wait **up to 10 seconds** for a wallet response. No response in time is treated as a transient failure and retried (see [Retries](#retries)). Keep wallet handlers fast; a healthy endpoint should normally respond in under 1 second.
 
 ## Get balance
 
@@ -33,12 +65,16 @@ Response:
 
 ```json
 {
-  "balance": 1500.00,
+  "balance": "1500.00",
   "currency": "USD"
 }
 ```
 
 {/* v1: added "currency" to the balance response (was just { Balance }). WHY: a bare number is ambiguous for multi-currency operators; we should never read a balance without knowing its currency. */}
+
+Amounts are decimal strings. Do not serialize money amounts as JSON numbers, and do not use binary floating-point internally for wallet math.
+
+{/* v1: decimal strings are mandatory for money. WHY: allowing JSON numbers reopens the precision bug this spec is trying to prevent; betting wallet integrations fail badly on precision drift, especially when crypto currencies or non-2dp fiat-like units appear. */}
 
 ## Process transaction
 
@@ -53,7 +89,7 @@ Request body:
 ```json
 {
   "type": "BET",
-  "amount": 10.00,
+  "amount": "10.00",
   "currency": "USD",
   "transactionId": "spark-tx-abc123",
   "roundId": "round-uuid-here",
@@ -68,7 +104,7 @@ Request body:
 | Field | Type | Description |
 | --- | --- | --- |
 | `type` | string | `BET` (debit), `WIN` (credit), `ROLLBACK` (refund) |
-| `amount` | decimal | Always positive. `0` is valid on a `WIN` that closes a losing round |
+| `amount` | decimal string | Always positive. `0` is valid on a `WIN` that closes a losing round |
 | `currency` | string | ISO 4217 of the amount |
 | `transactionId` | string | Our transaction id. Idempotency key |
 | `roundId` | string | UUID for the round |
@@ -79,6 +115,18 @@ Request body:
 | `roundFinished` | boolean | On `WIN` only: `true` when this win closes the round |
 | `description` | string | Free text |
 
+### Settlement rules
+
+{/* v1: NEW settlement rules. WHY: these are the invariants that prevent double settlement, currency drift, and ambiguous zero-amount wins during reconciliation. */}
+
+- `BET` creates exposure and debits `amount`.
+- `WIN` must reference the original `BET` with `betTransactionId`.
+- `WIN` with `reason: loss` must have `amount: "0"` and `roundFinished: true`.
+- `WIN` with `reason: cashout` or `reason: cap` credits `amount` and closes the round when `roundFinished: true`.
+- `ROLLBACK` must reference the original `BET` with `betTransactionId` and refund exactly that bet amount.
+- `currency` must match the player session currency and the original `BET`.
+- Reject duplicate settlement: after a round has a closing `WIN` or `ROLLBACK`, another settlement for the same `BET` must not move money.
+
 {/* v1: NEW fields betTransactionId, reason, roundFinished. WHY: (1) a WIN/ROLLBACK never referenced the originating BET before, so settlement/audit could not link them. (2) reason + roundFinished make the amount=0 loss-close self-documenting instead of a bare zero. This mirrors Upgaming's isroundfinished + reason, which their spec requires. GameId was dropped: it was a constant "sparksports" shipped in every call, pure noise. */}
 
 Response:
@@ -86,7 +134,7 @@ Response:
 ```json
 {
   "operatorTransactionId": "987654321",
-  "balance": 1490.00,
+  "balance": "1490.00",
   "currency": "USD",
   "transactionId": "spark-tx-abc123"
 }
@@ -98,7 +146,21 @@ Response:
 
 {/* v1: was one vague line. WHY: an idempotency contract has to define the window, the dedupe key, and the amount-mismatch case, or operators implement it three different ways. */}
 
-Dedupe on `transactionId`. A repeat of a `transactionId` you have already applied must return the **same response** as the first, without moving money again. If the same `transactionId` arrives with a **different amount or type**, reject it with `DUPLICATE_MISMATCH` rather than guessing. Keep the dedupe record for at least 24 hours.
+Dedupe on `transactionId`. A repeat of a `transactionId` you have already applied must return the **same response** as the first, without moving money again. If the same `transactionId` arrives with any different immutable field (`type`, `amount`, `currency`, `roundId`, `playerId`, `sessionId`, `betTransactionId`), reject it with `DUPLICATE_MISMATCH` rather than guessing.
+
+Keep the dedupe record for at least 30 days. Operators often need longer retention for audit and dispute handling; 90 days is preferred if your platform supports it.
+
+{/* v1: changed minimum retention from 24h to 30d. WHY: payment disputes, delayed retries, and reconciliation investigations commonly outlive one day; a one-day dedupe window is too short for a betting ledger. */}
+
+Implement idempotency atomically in your database, not with an in-memory lock. Concurrent duplicate `BET` requests must result in one debit and one stored response.
+
+{/* v1: NEW atomicity note. WHY: wallet APIs are usually horizontally scaled; process-local locks do not protect against retries landing on another pod. */}
+
+## Balance and exposure
+
+Balance responses should include only settled wallet balance. Do not subtract a pending bet twice if the same `BET` is retried. If your wallet has reserved/bonus balances, agree the exposure model during onboarding and keep cash and bonus balances distinguishable in your internal ledger.
+
+{/* v1: NEW balance/exposure section. WHY: many casino wallets split cash, bonus, reserved, and playable balances; without an agreed model, Spark can show or validate the wrong funds. */}
 
 ## Errors
 
@@ -125,7 +187,9 @@ Include a body so we can show the right message:
 | --- | --- | --- |
 | `INSUFFICIENT_BALANCE` | 400 | Not enough funds for the bet |
 | `INVALID_AMOUNT` | 400 | Amount is negative, zero where not allowed, or wrong precision |
+| `CURRENCY_MISMATCH` | 400 | Request currency does not match the player session or original bet |
 | `DUPLICATE_MISMATCH` | 409 | Reused `transactionId` with a different amount or type |
+| `ROUND_ALREADY_SETTLED` | 409 | A `WIN` or `ROLLBACK` already closed this round |
 | `PLAYER_BLOCKED` | 403 | Player cannot transact |
 | `SESSION_EXPIRED` | 401 | Session no longer valid |
 | `INVALID_PLAYER_OR_SESSION` | 401 | Unknown `playerId` or `sessionId` |
@@ -137,3 +201,7 @@ Include a body so we can show the right message:
 ## Retries
 
 We retry transient failures (HTTP `5xx`, timeout) up to **three times** with backoff (1s, 2s, 4s). Settled business outcomes (`4xx`: insufficient balance, blocked player, expired session) are never retried; they go straight to the player. Make your handler idempotent on `transactionId` so any retry returns the same result.
+
+If you timed out but later applied the transaction, the retry must return the applied response. Never answer a timed-out duplicate with "unknown" after money moved.
+
+{/* v1: NEW timeout-after-apply rule. WHY: the worst wallet failure mode is "money moved but retry says unknown", which creates reconciliation drift and bad player messaging. */}

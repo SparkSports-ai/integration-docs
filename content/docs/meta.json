@@ -6,6 +6,7 @@
     "---Direct Integration---",
     "...direct-integration",
     "---Reference---",
+    "openapi",
     "environments",
     "security",
     "testing-checklist",
