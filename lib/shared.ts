@@ -1,4 +1,4 @@
-export const appName = 'Spark Integration';
+export const appName = 'Spark Partner Portal';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
