@@ -114,6 +114,9 @@ This site may be shared with external casino partners. Treat every page as partn
 - Render web service. See `render.yaml`.
 - Bind HTTP to `0.0.0.0:$PORT`.
 - Deploy behind Cloudflare Zero Trust Access (or equivalent). Do not expose publicly.
+- Access setup is in `ACCESS.md`. `proxy.ts` verifies the Cloudflare Access JWT
+  when `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` are set, so the origin cannot
+  be used to bypass Access. Both unset means enforcement is off (local dev).
 
 ## Git
 
