@@ -45,6 +45,128 @@ Verify all of it:
 - Reject a repeated `X-Spark-Nonce` within the timestamp window.
 - Log `X-Spark-Request-Id`, `transactionId`, `roundId`, and `playerId` on every wallet call.
 
+### Signing a request
+
+Run the same procedure on both sides:
+
+1. `timestamp` is the current UNIX time in whole seconds, as a string.
+2. `nonce` is a fresh UUIDv4, or 16+ random bytes encoded as hex, per request.
+3. `path-and-query` is the request path including the leading `/` and the full query string exactly as sent. Do not include the host or a URL fragment. If a proxy may rewrite the URL, sign the original path and query.
+4. `rawBody` is the exact UTF-8 bytes of the request body. For `GET` balance calls with no body, use an empty string.
+5. Build the canonical string by joining these values with literal `.` dots in this order: `timestamp`, `nonce`, `METHOD` uppercase, `path-and-query`, `rawBody`.
+6. `X-Spark-Signature` is the lowercase hex output of `HMAC-SHA256(secret, canonicalString)`, where `secret` is the shared signing secret as UTF-8 bytes.
+
+Do not re-serialize JSON before signing or verifying. Sign and verify the raw bytes exactly as they appear on the wire.
+
+{/* v1: added step-by-step signing procedure. WHY: the header table and canonical-string template define the scheme, but implementers need exact byte-level instructions for timestamp, nonce, path/query, empty GET bodies, UTF-8 secret handling, and JSON serialization. */}
+
+### Worked example
+
+This is a golden test vector. The example secret is fake; your real signing secret comes from onboarding.
+
+Example secret:
+
+```text
+whsec_spark_example_0123456789abcdef
+```
+
+Complete request:
+
+```http
+POST /api/transaction/process HTTP/1.1
+Host: partner.example.com
+Content-Type: application/json
+Authorization: Bearer spark_example_token
+X-Spark-Timestamp: 1782763200
+X-Spark-Nonce: 2f4c4f1e-9f7b-4d54-8f50-9f54d42e8c11
+X-Spark-Signature: 9ae106e728bcf4179e1f42f88e8204019db0db67db1caa73cb5e63209e20c035
+X-Spark-Request-Id: req_01j1example7m9k2d4z8n6q5p3
+
+{"type":"BET","amount":"10.00","currency":"USD","transactionId":"spark-tx-abc123","roundId":"round-uuid-here","playerId":"player-unique-id","sessionId":"your-player-session-id"}
+```
+
+Raw body:
+
+```json
+{"type":"BET","amount":"10.00","currency":"USD","transactionId":"spark-tx-abc123","roundId":"round-uuid-here","playerId":"player-unique-id","sessionId":"your-player-session-id"}
+```
+
+Canonical string:
+
+```text
+1782763200.2f4c4f1e-9f7b-4d54-8f50-9f54d42e8c11.POST./api/transaction/process.{"type":"BET","amount":"10.00","currency":"USD","transactionId":"spark-tx-abc123","roundId":"round-uuid-here","playerId":"player-unique-id","sessionId":"your-player-session-id"}
+```
+
+Expected `X-Spark-Signature`:
+
+```text
+9ae106e728bcf4179e1f42f88e8204019db0db67db1caa73cb5e63209e20c035
+```
+
+{/* v1: added golden test vector. WHY: a real expected signature lets partners verify their implementation byte-for-byte before connecting to Spark, which catches path/query, JSON whitespace, casing, and encoding bugs early. */}
+
+### Code
+
+Node.js:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+const secret = 'whsec_spark_example_0123456789abcdef';
+const timestamp = '1782763200';
+const nonce = '2f4c4f1e-9f7b-4d54-8f50-9f54d42e8c11';
+const method = 'POST';
+const pathAndQuery = '/api/transaction/process';
+const rawBody =
+  '{"type":"BET","amount":"10.00","currency":"USD","transactionId":"spark-tx-abc123","roundId":"round-uuid-here","playerId":"player-unique-id","sessionId":"your-player-session-id"}';
+
+const canonical = [timestamp, nonce, method, pathAndQuery, rawBody].join('.');
+const signature = createHmac('sha256', Buffer.from(secret, 'utf8'))
+  .update(Buffer.from(canonical, 'utf8'))
+  .digest('hex');
+
+console.log(signature);
+// 9ae106e728bcf4179e1f42f88e8204019db0db67db1caa73cb5e63209e20c035
+
+function signaturesMatch(expectedHex, receivedHex) {
+  const expected = Buffer.from(expectedHex, 'hex');
+  const received = Buffer.from(receivedHex, 'hex');
+  return expected.length === received.length && timingSafeEqual(expected, received);
+}
+
+console.log(signaturesMatch(signature, '9ae106e728bcf4179e1f42f88e8204019db0db67db1caa73cb5e63209e20c035'));
+// true
+```
+
+Python:
+
+```python
+import hmac
+import hashlib
+
+secret = "whsec_spark_example_0123456789abcdef"
+timestamp = "1782763200"
+nonce = "2f4c4f1e-9f7b-4d54-8f50-9f54d42e8c11"
+method = "POST"
+path_and_query = "/api/transaction/process"
+raw_body = '{"type":"BET","amount":"10.00","currency":"USD","transactionId":"spark-tx-abc123","roundId":"round-uuid-here","playerId":"player-unique-id","sessionId":"your-player-session-id"}'
+
+canonical = ".".join([timestamp, nonce, method, path_and_query, raw_body])
+signature = hmac.new(
+    secret.encode("utf-8"),
+    canonical.encode("utf-8"),
+    hashlib.sha256,
+).hexdigest()
+
+print(signature)
+# 9ae106e728bcf4179e1f42f88e8204019db0db67db1caa73cb5e63209e20c035
+
+print(hmac.compare_digest(signature, "9ae106e728bcf4179e1f42f88e8204019db0db67db1caa73cb5e63209e20c035"))
+# True
+```
+
+{/* v1: added copy-pasteable Node.js and Python snippets. WHY: these are the most common integration stacks and both demonstrate the exact HMAC operation plus constant-time comparison for verification. */}
+
 {/* v1: tightened "Bearer + signature" into a concrete canonicalization rule. WHY: "sign the body" alone leaves room for incompatible implementations and replay bugs; nonce + method/path binding prevents replaying a valid body against another endpoint. */}
 
 ## Timeouts
