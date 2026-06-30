@@ -96,9 +96,9 @@ See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle
 | `/api/generic/user/{playerId}/balance` | GET | Return live balance |
 | `/api/transaction/process` | POST | Bet, win, rollback |
 
-Your callback endpoints use Bearer auth plus `X-Spark-Signature`, `X-Spark-Timestamp`, `X-Spark-Nonce`, and `X-Spark-Request-Id`.
+Your callback endpoints use Bearer auth plus `X-Spark-Signature`, `X-Spark-Timestamp`, and `X-Spark-Request-Id`.
 
-{/* v1: added callback header summary. WHY: the overview previously mentioned only credentials in onboarding, leaving the new nonce/request-id signature fields hidden in leaf pages. */}
+{/* v1: added callback header summary. WHY: the overview previously mentioned only credentials in onboarding, leaving signature and request-id fields hidden in leaf pages. */}
 
 ## What SparkSports sends you
 

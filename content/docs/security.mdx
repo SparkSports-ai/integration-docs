@@ -12,7 +12,6 @@ description: Requirements and best practices for a secure integration.
 | Bearer tokens | Treat launch and callback tokens like production secrets; rotate if leaked |
 | Signed callbacks | Verify the `X-Spark-Signature` on every callback using the exact raw request body |
 | Replay window | Reject callbacks whose `X-Spark-Timestamp` is outside the 60-second window |
-| Replay nonce | Reject repeated `X-Spark-Nonce` values inside the replay window |
 | Session isolation | Do not expose `sessionId` to the game client |
 | Idempotency | Key wallet handling on `transactionId` |
 | Atomic ledger | Apply idempotency and wallet movement in one database transaction |
@@ -20,7 +19,7 @@ description: Requirements and best practices for a secure integration.
 | Logging | Never log bearer tokens, signing secrets, launch JWTs, full iframe URLs, or raw wallet payloads containing player ids |
 
 {/* v1: Bearer + signed-callbacks rows replace the old "Basic Auth password" row. WHY: a signature over the body with a timestamp gives message authentication and replay protection that Basic Auth cannot. */}
-{/* v1: added TLS version, nonce, atomic ledger, and logging requirements. WHY: these are baseline controls for money-moving APIs: modern transport, replay protection inside the timestamp window, no double movement under concurrency, and no credential leakage through logs. */}
+{/* v1: added TLS version, atomic ledger, and logging requirements. WHY: these are baseline controls for money-moving APIs: modern transport, bounded replay protection, no double movement under concurrency, and no credential leakage through logs. */}
 
 ## Operational controls
 
@@ -43,11 +42,11 @@ Launch URLs carry a JWT that expires about 30 seconds after issue (`expiresAt` t
 
 ## Wallet callback signatures
 
-Verify signatures before parsing the request as trusted input. Use constant-time comparison for signature equality. Store recently seen nonces for at least the replay window. If your infrastructure terminates TLS before the application, make sure the app still receives the original path and query string used in the signature.
+Verify signatures before parsing the request as trusted input. Use constant-time comparison for signature equality. If your infrastructure terminates TLS before the application, make sure the app still receives the original path and query string used in the signature.
 
 Clock drift causes false rejects, so keep servers synchronized with NTP. If your clock is out by more than 60 seconds, fix the clock rather than widening the replay window.
 
-{/* v1: NEW signature operations section. WHY: operators need implementation details that prevent common HMAC mistakes: normal string compare timing, missing nonce storage, and proxy path rewriting. */}
+{/* v1: NEW signature operations section. WHY: operators need implementation details that prevent common HMAC mistakes: normal string compare timing and proxy path rewriting. Nonce was intentionally removed because timestamp plus transactionId idempotency gives the protection we need without a distributed nonce store requirement. */}
 
 ## Idempotency and ledger safety
 

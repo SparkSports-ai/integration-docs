@@ -72,7 +72,6 @@ paths:
         - callbackBearer: []
           sparkSignature: []
           sparkTimestamp: []
-          sparkNonce: []
           sparkRequestId: []
       requestBody:
         required: true
@@ -116,7 +115,6 @@ paths:
         - callbackBearer: []
           sparkSignature: []
           sparkTimestamp: []
-          sparkNonce: []
           sparkRequestId: []
       parameters:
         - name: playerId
@@ -156,7 +154,6 @@ paths:
         - callbackBearer: []
           sparkSignature: []
           sparkTimestamp: []
-          sparkNonce: []
           sparkRequestId: []
       requestBody:
         required: true
@@ -281,17 +278,12 @@ components:
       type: apiKey
       in: header
       name: X-Spark-Signature
-      description: Hex HMAC-SHA256 of `{timestamp}.{nonce}.{METHOD}.{path-and-query}.{rawBody}`.
+      description: Hex HMAC-SHA256 of `{timestamp}.{METHOD}.{path-and-query}.{rawBody}`.
     sparkTimestamp:
       type: apiKey
       in: header
       name: X-Spark-Timestamp
       description: UNIX timestamp in seconds. Reject values outside the 60-second replay window.
-    sparkNonce:
-      type: apiKey
-      in: header
-      name: X-Spark-Nonce
-      description: Unique random id for this request. Reject repeated nonces inside the replay window.
     sparkRequestId:
       type: apiKey
       in: header

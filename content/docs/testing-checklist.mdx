@@ -46,12 +46,11 @@ Run through this in staging before asking for production keys.
 - [ ] Insufficient balance returns `400 INSUFFICIENT_BALANCE`
 - [ ] Balance endpoint returns `balance` and `currency` matching wallet state
 - [ ] Valid signature accepted, tampered body rejected
-- [ ] Replayed nonce inside the timestamp window is rejected
 - [ ] Request with old timestamp is rejected
 - [ ] Timeout followed by retry returns the applied transaction if money moved
 - [ ] Wallet service restart or pod failover does not lose idempotency state
 
-{/* v1: added concurrency, settlement, replay, timeout, and failover checks. WHY: outage recovery is where real-money APIs drift unless idempotency is durable outside one process. */}
+{/* v1: added concurrency, settlement, timestamp freshness, timeout, and failover checks. WHY: outage recovery is where real-money APIs drift unless idempotency is durable outside one process. Nonce replay checks were removed because v1 relies on timestamp freshness plus transactionId idempotency. */}
 
 ## End-to-end
 

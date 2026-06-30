@@ -30,13 +30,12 @@ The OpenAPI spec models the launch bearer token and callback headers:
 - `Authorization: Bearer <token>`
 - `X-Spark-Signature`
 - `X-Spark-Timestamp`
-- `X-Spark-Nonce`
 - `X-Spark-Request-Id`
 
 The callback signature canonical string is:
 
 ```text
-{timestamp}.{nonce}.{METHOD}.{path-and-query}.{rawBody}
+{timestamp}.{METHOD}.{path-and-query}.{rawBody}
 ```
 
 See [Wallet API authentication](/docs/direct-integration/wallet-api#authentication) for verification details.
