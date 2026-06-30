@@ -16,15 +16,49 @@ You host session validation and wallet settlement. SparkSports hosts the launch 
 
 ## Launch flow
 
+A player clicks "Play Spark" in your lobby. Four steps run before the game loads.
+
 ```
 Player clicks "Play Spark"
   → Your backend → POST /api/game/launch
   → SparkSports → POST /api/generic/authenticate (your API)
-  → SparkSports returns iframe URL
-  → Player loads Spark in iframe
+  → SparkSports returns the iframe URL
+  → Player loads Spark in the iframe
 ```
 
-Request and response shapes are in [Launch the game](/docs/direct-integration/launch).
+Your backend calls `POST /api/game/launch` with HTTP Basic Auth:
+
+```json
+{
+  "SessionId": "your-player-session-id"
+}
+```
+
+We validate that session by calling your `POST /api/generic/authenticate` with the same `SessionId`. Your endpoint returns the player profile:
+
+```json
+{
+  "SessionId": "your-player-session-id",
+  "Pincode": "player-unique-id",
+  "Username": "john_doe",
+  "Balance": 1500.00,
+  "Currency": "USD",
+  "Country": "US"
+}
+```
+
+If the session is valid, we return the iframe URL:
+
+```json
+{
+  "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+  "expiresIn": 30
+}
+```
+
+Your frontend loads that URL in an iframe. The token is short-lived, so request a new URL each session.
+
+Full field tables and error codes are in [Launch the game](/docs/direct-integration/launch) and [Session validation](/docs/direct-integration/session-validation).
 
 ## Wallet flow
 
