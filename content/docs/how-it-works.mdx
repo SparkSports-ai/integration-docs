@@ -18,12 +18,17 @@ You host session validation and wallet settlement. SparkSports hosts the launch 
 
 A player clicks "Play Spark" in your lobby. Four steps run before the game loads.
 
-```
-Player clicks "Play Spark"
-  → Your backend → POST /api/game/launch
-  → SparkSports → POST /api/generic/authenticate (your API)
-  → SparkSports returns the iframe URL
-  → Player loads Spark in the iframe
+```mermaid
+sequenceDiagram
+    participant Player
+    participant Backend as Your backend
+    participant Spark as SparkSports
+    Player->>Backend: Clicks Play Spark
+    Backend->>Spark: POST /api/game/launch
+    Spark->>Backend: POST /api/generic/authenticate
+    Backend-->>Spark: Player profile
+    Spark-->>Backend: url + expiresIn
+    Backend-->>Player: Loads Spark in iframe
 ```
 
 Your backend calls `POST /api/game/launch` with HTTP Basic Auth:
