@@ -12,10 +12,10 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? 'https://partners.sparksports.ai',
   ),
   title: {
-    default: 'Spark Integration',
-    template: '%s | Spark Integration',
+    default: 'Spark Partner Portal',
+    template: '%s | Spark Partner Portal',
   },
-  description: 'Partner integration documentation for the Spark game.',
+  description: 'Documentation and resources for partners integrating Spark.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     apple: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
