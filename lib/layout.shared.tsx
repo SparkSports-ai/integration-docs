@@ -6,25 +6,18 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: (
-        <>
-          <Image
-            src="/logo/light.svg"
-            alt={appName}
-            width={112}
-            height={36}
-            className="h-7 w-auto dark:hidden"
-            priority
-          />
-          <Image
-            src="/logo/dark.svg"
-            alt={appName}
-            width={112}
-            height={36}
-            className="hidden h-7 w-auto dark:block"
-            priority
-          />
-        </>
+        // Dark-only site — render the dark (white wordmark) Spark logo.
+        <Image
+          src="/logo/dark.svg"
+          alt={appName}
+          width={112}
+          height={36}
+          className="h-7 w-auto"
+          priority
+        />
       ),
     },
+    // Dark-only: no light theme, so hide the theme toggle.
+    themeSwitch: { enabled: false },
   };
 }
