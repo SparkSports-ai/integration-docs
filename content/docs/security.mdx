@@ -11,7 +11,7 @@ description: Requirements and best practices for a secure integration.
 | Credential storage | Treat launch and callback passwords like production secrets; rotate if leaked |
 | Session isolation | Do not expose `SessionId` to the game client |
 | Idempotency | Key wallet handling on `ExternalTransactionId` |
-| Rate limits | Launch API: 100 requests per second per operator |
+| Launch usage | Request one launch URL per player session. Do not poll the endpoint |
 
 ## Launch tokens
 

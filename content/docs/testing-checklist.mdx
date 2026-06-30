@@ -1,5 +1,5 @@
 ---
-title: Testing Checklist
+title: Testing checklist
 description: Verify your integration before production go-live.
 ---
 
@@ -26,7 +26,7 @@ Run through this in staging before asking for production keys.
 - [ ] Type 2 with amount `0` on loss
 - [ ] Type 3 refunds the original bet
 - [ ] Duplicate `ExternalTransactionId` is idempotent
-- [ ] Insufficient balance returns `ErrorCode: 201`
+- [ ] Insufficient balance returns `ErrorCode: 104`
 - [ ] Balance endpoint matches wallet state
 
 ## End-to-end

@@ -1,5 +1,5 @@
 ---
-title: Launch the Game
+title: Launch the game
 description: Request a signed iframe URL when a player opens Spark.
 ---
 
@@ -37,7 +37,7 @@ HTTP Basic Auth. We give you the username and password during onboarding.
 
 ```json
 {
-  "url": "https://game.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+  "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
   "expiresIn": 30
 }
 ```
@@ -55,7 +55,7 @@ Put the URL in an iframe:
 
 ```html
 <iframe
-  src="https://game.sparksports.ai/game/sparksports?jwt=..."
+  src="https://staging.spark.sparksports.ai/game/sparksports?jwt=..."
   width="100%"
   height="700"
   frameborder="0"
@@ -69,7 +69,8 @@ Put the URL in an iframe:
 
 | HTTP | Meaning |
 | --- | --- |
-| `401` | Bad launch credentials |
 | `400` | Missing `SessionId` |
-| `502` | Session validation failed ([Session validation](/docs/direct-integration/session-validation)) |
+| `401` | Bad launch credentials |
+| `403` | Operator account inactive |
+| `502` | [Session validation](/docs/direct-integration/session-validation) failed. We also pass through the status your authenticate endpoint returned |
 | `503` | Launch disabled (maintenance) |
