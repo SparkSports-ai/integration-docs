@@ -23,15 +23,23 @@ const { rewrite: rewriteSuffix } = rewritePath(
 // deploy made before Cloudflare is wired up keep working. See ACCESS.md.
 const teamDomain = process.env.CF_ACCESS_TEAM_DOMAIN?.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 const audience = process.env.CF_ACCESS_AUD;
-const accessEnabled = Boolean(teamDomain && audience);
+
+// Three states, deliberately:
+//   both unset    -> enforcement off (local dev, pre-Cloudflare deploys)
+//   both set      -> enforcement on, verify the Access JWT
+//   exactly one   -> misconfigured, fail closed (a typo must not silently
+//                    disable protection)
+const accessReady = Boolean(teamDomain && audience);
+const accessMisconfigured = Boolean(teamDomain) !== Boolean(audience);
 
 // createRemoteJWKSet caches the fetched keys, so keep it at module scope.
-const jwks = accessEnabled
+const jwks = accessReady
   ? createRemoteJWKSet(new URL(`https://${teamDomain}/cdn-cgi/access/certs`))
   : null;
 
 async function passesAccess(request: NextRequest): Promise<boolean> {
-  if (!accessEnabled || !jwks) return true;
+  if (accessMisconfigured) return false; // fail closed
+  if (!accessReady || !jwks) return true; // enforcement off
 
   const token =
     request.headers.get('cf-access-jwt-assertion') ??
@@ -50,14 +58,20 @@ async function passesAccess(request: NextRequest): Promise<boolean> {
 }
 
 export default async function proxy(request: NextRequest) {
-  // Next internals carry the Access cookie like any same-origin request, so
-  // there's no need to verify the JWT on every asset chunk.
-  if (
-    accessEnabled &&
-    !request.nextUrl.pathname.startsWith('/_next/') &&
-    !(await passesAccess(request))
-  ) {
+  const { pathname } = request.nextUrl;
+
+  // Verify Access first, so the origin returns 403 for every path (including
+  // `/`) when a request did not come through Cloudflare Access. Next internals
+  // carry the Access cookie like any same-origin request, so there's no need to
+  // verify the JWT on every asset chunk.
+  if (!pathname.startsWith('/_next/') && !(await passesAccess(request))) {
     return new NextResponse('Forbidden', { status: 403 });
+  }
+
+  // There is no landing page. Send the root to the docs, but only after the
+  // Access check above, so an unauthenticated origin hit to `/` still gets 403.
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/docs', request.nextUrl));
   }
 
   const result = rewriteSuffix(request.nextUrl.pathname);
