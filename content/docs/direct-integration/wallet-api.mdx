@@ -11,7 +11,7 @@ HTTP Basic Auth on all wallet endpoints, using the callback credentials from onb
 
 ## Get balance
 
-We call this when we need a fresh balance, usually after a failed transaction retry.
+We call this when we need a fresh balance during play.
 
 ```
 GET {your-callback-base-url}/api/generic/user/{pincode}/balance?sessionId={sessionId}
@@ -56,7 +56,7 @@ Request body:
 | `Description` | Free text |
 | `GameId` | Always `"sparksports"` |
 | `RoundId` | UUID for the round |
-| `PinCode` | From authenticate |
+| `PinCode` | Player id from authenticate (capital `C` here; authenticate returns it as `Pincode`) |
 | `SessionId` | Active player session |
 
 Response:
@@ -71,22 +71,29 @@ Response:
 
 ## Idempotency
 
-Same `ExternalTransactionId` twice should return the same result without processing twice. We retry on network blips.
+Same `ExternalTransactionId` twice must return the same result without processing twice. See [Retries](#retries).
 
 ## Errors
 
+To signal a failure, return a non-2xx HTTP status with this body. We route on `ErrorCode`, not the HTTP status.
+
 ```json
 {
-  "ErrorCode": 201,
+  "ErrorCode": 104,
   "Message": "Insufficient balance"
 }
 ```
 
-| ErrorCode | HTTP | Meaning |
-| --- | --- | --- |
-| `102` | 403 | Session expired |
-| `111` | 403 | Player blocked |
-| `201` | 400 | Not enough balance |
-| `202` | 400 | Duplicate transaction |
+| ErrorCode | Meaning |
+| --- | --- |
+| `104` | Insufficient balance |
+| `125` | Invalid amount |
+| `111` | Player blocked |
+| `102` | Session expired |
+| `122` | Invalid pincode or session |
+| `126` | Bad callback credentials |
+| `99` | Operator internal error (we may retry this) |
 
-We retry transient failures (network errors, 5xx) up to three times with backoff. We do not retry insufficient balance or expired session; those go straight to the player.
+## Retries
+
+We retry transient operator errors (`ErrorCode 99`) up to three times with backoff (1s, 2s, 4s). Settled business outcomes like insufficient balance, blocked player, or expired session are never retried; they go straight to the player. Make your handler idempotent on `ExternalTransactionId` so any retry returns the same result.

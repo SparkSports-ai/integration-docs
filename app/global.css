@@ -3,31 +3,21 @@
 @import 'fumadocs-ui/css/preset.css';
 
 /*
- * Spark brand theme
- * Mirrors the palette used in the Spark Mintlify docs (docs.json):
+ * Spark brand theme — dark only.
+ * Palette mirrors the Spark Mintlify docs (docs.json):
  *   primary #4C00D2 · dark #753FE4 · accent #E1FF83
- * Fumadocs expects full hsl() values for its color variables.
+ * The site is locked to dark mode, so brand overrides live under `.dark`
+ * (the preset's own `.dark` block would otherwise win on specificity).
  */
 
-:root {
-  /* #4C00D2 */
-  --color-fd-primary: hsl(262, 100%, 41%);
-  --color-fd-primary-foreground: hsl(0, 0%, 100%);
-
-  /* pale lime tint (#E1FF83) for hover/active surfaces */
-  --color-fd-accent: hsl(76, 100%, 95%);
-  --color-fd-accent-foreground: hsl(262, 100%, 24%);
-
-  --color-fd-ring: hsl(262, 100%, 41%);
-}
-
 .dark {
-  /* lighter purple #753FE4 reads better on dark surfaces */
+  /* lighter purple #753FE4 reads well on dark surfaces */
   --color-fd-primary: hsl(258, 75%, 57%);
   --color-fd-primary-foreground: hsl(0, 0%, 100%);
 
-  --color-fd-accent: hsl(258, 30%, 18%);
-  --color-fd-accent-foreground: hsl(76, 100%, 80%);
+  /* hover surface: subtle purple-tinted panel with readable light text */
+  --color-fd-accent: hsl(258, 28%, 20%);
+  --color-fd-accent-foreground: hsl(0, 0%, 98%);
 
   --color-fd-ring: hsl(258, 75%, 57%);
 }
@@ -36,4 +26,42 @@
 ::selection {
   background-color: #e1ff83;
   color: #09090b;
+}
+
+/*
+ * Nav states — sidebar (left) and table of contents (right).
+ * Hover  → neon (#E1FF83) text.
+ * Active → neon background with white text.
+ */
+
+/* --- Sidebar --- */
+#nd-sidebar a:hover,
+#nd-sidebar button:hover {
+  background-color: transparent;
+  color: #e1ff83;
+}
+
+#nd-sidebar a[data-active='true'],
+#nd-sidebar a[data-active='true']:hover {
+  background-color: #e1ff83;
+  /* near-black on neon — the brand's own pairing, fully legible */
+  color: #09090b;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+/* --- Table of contents ---
+ * The TOC marks every on-screen heading active at once, so a filled
+ * background stacks into a solid block. Use neon text + a neon scroll
+ * thumb instead by scoping the primary color to the TOC. */
+#nd-toc {
+  --color-fd-primary: #e1ff83;
+}
+
+#nd-toc a:hover {
+  color: #e1ff83;
+}
+
+#nd-toc a[data-active='true'] {
+  font-weight: 600;
 }
