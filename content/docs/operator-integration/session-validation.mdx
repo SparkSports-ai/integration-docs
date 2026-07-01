@@ -126,8 +126,8 @@ We do not retry authenticate. One attempt; if it fails, launch fails.
 
 ## Notes
 
-- `Pincode` is the player key for all later wallet calls.
-- `Balance`, `Username`, and `Currency` are required. If any is missing, launch fails with `OperatorAuthInvalid`.
+- `Pincode` is the player key for all later wallet calls. A missing `SessionId` or `Pincode` fails launch with `OperatorAuthInvalid`.
+- Send `Balance`, `Username`, and `Currency` on every response. The game needs them to run correctly.
 - `Country` is optional. If you omit it, we store an empty value.
 - Balance at authenticate is a snapshot. During play we read balance from your [wallet API](/docs/operator-integration/wallet-api).
 - Keep `SessionId` on your backend. Do not pass it into client-side game code.

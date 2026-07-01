@@ -58,7 +58,8 @@ curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
 
 ```json
 {
-  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci..."
+  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+  "expiresIn": 30
 }
 ```
 
@@ -68,6 +69,11 @@ curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
       description:
         'Full HTTPS URL to load Spark in an iframe. The jwt query parameter is a signed, short-lived launch token, not your player SessionId. Load this URL as the iframe src.',
       type: 'string',
+      required: true,
+    },
+    expiresIn: {
+      description: 'Seconds until the JWT in `url` expires. Informational; do not rely on this instead of loading the URL immediately.',
+      type: 'number',
       required: true,
     },
   }}
@@ -122,5 +128,6 @@ Error responses use this JSON shape:
 | `502` | `OperatorUnreachable` | Could not reach your authenticate endpoint (network failure) |
 | `502` | `OperatorAuthInvalid` | Your authenticate returned 200 but was missing `SessionId` or `Pincode` |
 | `503` | `MAINTENANCE_MODE` | Launch disabled (maintenance) |
+| `500` | `InternalError` | Unexpected server error on our side. Safe to retry with backoff |
 
 Any 2xx is accepted as success.

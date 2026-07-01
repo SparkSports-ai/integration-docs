@@ -89,7 +89,7 @@ Errors use `{ "code", "message" }`:
 | HTTP | `code` | When |
 | --- | --- | --- |
 | `400` | `UNSUPPORTED_CURRENCY` | Currency is not on the supported list |
-| `401` | `UNAUTHORIZED` | Bad or missing Bearer token |
+| `401` | `UNAUTHORIZED` | Bad or missing Bearer token, or an unrecognized operator routing identifier |
 | `500` | `OPERATOR_NOT_PROVISIONED` | Operator row missing or inactive on our side |
 | `503` | `MAINTENANCE_MODE` | Launch disabled for maintenance |
 
@@ -158,7 +158,11 @@ Spark calls the aggregator's wallet during play. These are the aggregator's endp
 
 Authentication is a per-endpoint SHA-512 signature sent in the `SecretKey` header. The signed fields differ per endpoint, so each is signed with its own formula. We hold the hash key on our side and never put it on the wire.
 
-Money is sent in minor units as integers. `isRoundFinished` closes a round. We deduplicate on `casinoSessionId` plus our transaction id, and retries never double-charge or double-credit.
+Money is sent as decimal JSON numbers, the same convention as the operator path. `isRoundFinished` closes a round. We deduplicate on our transaction id, and retries never double-charge or double-credit.
+
+## IP allowlisting
+
+We enforce an inbound IP allowlist on `/api/upgaming/*`, checked before the Bearer token. Requests from an IP outside the allowlist get `403 Forbidden`, not `401 Unauthorized`. Send us your egress IPs during onboarding so we can add them; an aggregator with no allowlisted IPs on our side cannot reach any `/api/upgaming/*` endpoint.
 
 ## Onboarding deliverables
 
