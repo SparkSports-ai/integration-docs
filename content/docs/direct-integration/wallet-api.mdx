@@ -25,6 +25,25 @@ Response:
 }
 ```
 
+<TypeTable
+  type={{
+    Balance: {
+      description: 'Current wallet balance for the player.',
+      type: 'number',
+      required: true,
+    },
+  }}
+/>
+
+Example with curl (replay against your handler):
+
+```bash
+curl "$CALLBACK_BASE/api/generic/user/$PINCODE/balance?sessionId=$SESSION_ID" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS"
+```
+
+`pincode` is lowercase in the URL path. The transaction body uses `PinCode` with a capital C. `sessionId` is required. Your callback base URL may include a path prefix; we strip trailing slashes.
+
 ## Process transaction
 
 One endpoint for bets, wins, and rollbacks.
@@ -42,22 +61,76 @@ Request body:
   "ExternalTransactionId": "spark-tx-abc123",
   "Description": "Spark streak bet",
   "GameId": "sparksports",
-  "RoundId": "round-uuid-here",
+  "RoundId": "streak_abc123def456",
   "PinCode": "player-unique-id",
   "SessionId": "your-player-session-id"
 }
 ```
 
-| Field | Description |
-| --- | --- |
-| `Amount` | Always positive |
-| `Type` | `1` bet (debit), `2` win (credit), `3` rollback (refund) |
-| `ExternalTransactionId` | Our transaction ID; use this for idempotency |
-| `Description` | Free text |
-| `GameId` | Always `"sparksports"` |
-| `RoundId` | UUID for the round |
-| `PinCode` | Player id from authenticate (capital `C` here; authenticate returns it as `Pincode`) |
-| `SessionId` | Active player session |
+<TypeTable
+  type={{
+    Amount: {
+      description: 'Transaction amount. Always positive.',
+      type: 'number',
+      required: true,
+    },
+    Type: {
+      description: '1 = bet (debit), 2 = win (credit), 3 = rollback (refund).',
+      type: 'integer',
+      required: true,
+    },
+    ExternalTransactionId: {
+      description: 'SparkSports transaction ID. Use for idempotency.',
+      type: 'string',
+      required: true,
+    },
+    Description: {
+      description: 'Free text.',
+      type: 'string',
+      required: true,
+    },
+    GameId: {
+      description: 'Defaults to "sparksports".',
+      type: 'string',
+      required: true,
+    },
+    RoundId: {
+      description:
+        'Round identifier. One per streak. Format is "streak_" followed by 12 hex characters.',
+      type: 'string',
+      required: true,
+    },
+    PinCode: {
+      description:
+        'Player ID from authenticate. Capital C here; authenticate returns Pincode.',
+      type: 'string',
+      required: true,
+    },
+    SessionId: {
+      description: 'Active player session.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
+Example with curl (replay against your handler):
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Amount": 10.00,
+    "Type": 1,
+    "ExternalTransactionId": "spark-tx-abc123",
+    "Description": "Spark streak bet",
+    "GameId": "sparksports",
+    "RoundId": "streak_abc123def456",
+    "PinCode": "player-unique-id",
+    "SessionId": "your-player-session-id"
+  }'
+```
 
 Response:
 
@@ -69,13 +142,41 @@ Response:
 }
 ```
 
+<TypeTable
+  type={{
+    TransactionId: {
+      description: 'Your internal transaction ID.',
+      type: 'integer',
+      required: true,
+    },
+    CurrentBalance: {
+      description: 'Wallet balance after the transaction.',
+      type: 'number',
+      required: true,
+    },
+    ExternalTransactionId: {
+      description: 'Echo of the ID we sent in the request.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
 ## Idempotency
 
-Same `ExternalTransactionId` twice must return the same result without processing twice. See [Retries](#retries).
+Store each `ExternalTransactionId` when you process it. If you see the same ID again, return the stored `TransactionId` and `CurrentBalance` without re-processing. We never send the same `ExternalTransactionId` with a different `Amount`, `Type`, or `RoundId`. See [Retries](#retries).
+
+## Numbers
+
+Send `Amount`, `Balance`, and `CurrentBalance` as JSON numbers with two decimal places, for example `10.00`. Do not send integer cents or strings. We round responses to minor units.
+
+## Concurrency
+
+We may call your wallet for the same player concurrently, for example a balance read while a bet is in flight, or bets for two different streaks. Your wallet must handle concurrent per-player access safely. We do not serialize calls per player.
 
 ## Errors
 
-To signal a failure, return a non-2xx HTTP status with this body. We route on `ErrorCode`, not the HTTP status.
+To signal a failure, return a non-2xx HTTP status with this body. We route on `ErrorCode`, not the HTTP status. Any 2xx is accepted as success (200 is conventional). The specific non-2xx status does not change behavior, only `ErrorCode` does. A non-2xx with no `ErrorCode` in the body is treated as a generic, non-retryable operator error.
 
 ```json
 {
@@ -92,8 +193,9 @@ To signal a failure, return a non-2xx HTTP status with this body. We route on `E
 | `102` | Session expired |
 | `122` | Invalid pincode or session |
 | `126` | Bad callback credentials |
-| `99` | Operator internal error (we may retry this) |
+| `99` | Operator internal error (we retry this) |
+| any other | Generic operator error, not retried |
 
 ## Retries
 
-We retry transient operator errors (`ErrorCode 99`) up to three times with backoff (1s, 2s, 4s). Settled business outcomes like insufficient balance, blocked player, or expired session are never retried; they go straight to the player. Make your handler idempotent on `ExternalTransactionId` so any retry returns the same result.
+We retry only when your response body contains `ErrorCode: 99`. We make up to 3 total attempts (the initial call plus 2 retries) with 1s and 2s delays. Network failures and 5xx responses without `ErrorCode: 99` are not retried. Settled outcomes like insufficient balance, blocked player, or expired session are never retried; they go straight to the player. Make your handler idempotent on `ExternalTransactionId` so any retry returns the same result.

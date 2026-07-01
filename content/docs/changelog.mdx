@@ -1,0 +1,18 @@
+---
+title: Changelog
+description: Notable updates to the Spark integration API and these docs.
+---
+
+Changes that affect your integration. Dates are when the change was published. Items marked **Docs** describe existing behavior more precisely and are not API changes.
+
+## 2026-07-01
+
+| Area | Change |
+| --- | --- |
+| Docs | Retry policy: we retry only on `ErrorCode: 99`, up to 3 total attempts with 1s and 2s delays. Network failures and 5xx without `ErrorCode: 99` are not retried. |
+| Docs | `RoundId` is not a UUID. Format is `streak_` followed by 12 hex characters, one per streak. |
+| Docs | Number precision: `Amount`, `Balance`, and `CurrentBalance` are JSON numbers with two decimal places. Do not send integer cents or strings. |
+| Docs | Concurrency: we may call your wallet for the same player concurrently. Handle per-player concurrency safely. |
+| Docs | Launch errors: `OperatorAuthFailed` returns your authenticate endpoint's HTTP status. Added `OperatorUnreachable` and `OperatorAuthInvalid` (both 502). |
+| Docs | Error handling: any 2xx is accepted as success. Unrecognized `ErrorCode` values are treated as a generic, non-retryable operator error. |
+| Docs | Session validation: `Country` is optional. `Balance`, `Username`, and `Currency` are required. We do not retry authenticate. |

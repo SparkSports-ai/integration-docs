@@ -25,6 +25,25 @@ HTTP Basic Auth with the callback credentials we configure together. We send the
 }
 ```
 
+<TypeTable
+  type={{
+    SessionId: {
+      description: 'Active player session token from your platform.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
+This is the request we send. Replay it against your handler to test your implementation:
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/generic/authenticate" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"your-player-session-id"}'
+```
+
 ## Success response
 
 ```json
@@ -38,14 +57,53 @@ HTTP Basic Auth with the callback credentials we configure together. We send the
 }
 ```
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `SessionId` | Yes | Same session ID we sent |
-| `Pincode` | Yes | Stable player ID on your side |
-| `Username` | Yes | Display name |
-| `Balance` | Yes | Wallet balance at launch |
-| `Currency` | Yes | ISO 4217 code (`USD`, `EUR`, etc.) |
-| `Country` | No | ISO 3166-1 alpha-2 code |
+<TypeTable
+  type={{
+    SessionId: {
+      description: 'Same session ID we sent.',
+      type: 'string',
+      required: true,
+    },
+    Pincode: {
+      description: 'Stable player ID on your side.',
+      type: 'string',
+      required: true,
+    },
+    Username: {
+      description: 'Display name.',
+      type: 'string',
+      required: true,
+    },
+    Balance: {
+      description: 'Wallet balance at launch.',
+      type: 'number',
+      required: true,
+    },
+    Currency: {
+      description: (
+        <>
+          <a href="https://en.wikipedia.org/wiki/ISO_4217" target="_blank" rel="noopener noreferrer">
+            ISO 4217
+          </a>{' '}
+          code (USD, EUR, etc.).
+        </>
+      ),
+      type: 'string',
+      required: true,
+    },
+    Country: {
+      description: (
+        <>
+          <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2" target="_blank" rel="noopener noreferrer">
+            ISO 3166-1 alpha-2
+          </a>{' '}
+          code.
+        </>
+      ),
+      type: 'string',
+    },
+  }}
+/>
 
 ## Error response
 
@@ -56,6 +114,21 @@ HTTP Basic Auth with the callback credentials we configure together. We send the
 }
 ```
 
+<TypeTable
+  type={{
+    ErrorCode: {
+      description: 'See table below for values.',
+      type: 'integer',
+      required: true,
+    },
+    Message: {
+      description: 'Human-readable error text.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
 | ErrorCode | Meaning |
 | --- | --- |
 | `102` | Session invalid or expired |
@@ -65,5 +138,8 @@ HTTP Basic Auth with the callback credentials we configure together. We send the
 ## Notes
 
 - `Pincode` is the player key for all later wallet calls.
+- `Balance`, `Username`, and `Currency` are required. If any is missing, launch fails.
+- `Country` is optional. If you omit it, we store an empty value.
 - Balance at authenticate is a snapshot. During play we read balance from your [wallet API](/docs/direct-integration/wallet-api).
 - Keep `SessionId` on your backend. Do not pass it into client-side game code.
+- We do not retry authenticate. One attempt; if it fails, launch fails.

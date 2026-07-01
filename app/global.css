@@ -2,6 +2,10 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
+@theme static {
+  --color-fd-warning: #e1ff83;
+}
+
 /*
  * Spark brand theme — dark only.
  * Palette mirrors the Spark Mintlify docs (docs.json):
@@ -20,6 +24,9 @@
   --color-fd-accent-foreground: hsl(0, 0%, 98%);
 
   --color-fd-ring: hsl(258, 75%, 57%);
+
+  /* brand toxic green */
+  --color-toxic: #e1ff83;
 }
 
 /* Lime selection highlight echoes the brand accent (#E1FF83). */

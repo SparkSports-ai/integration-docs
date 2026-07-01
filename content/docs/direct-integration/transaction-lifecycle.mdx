@@ -3,7 +3,9 @@ title: Transaction lifecycle
 description: How bets, wins, and rollbacks flow through a Spark game round.
 ---
 
-Each round gets a `RoundId`. Most rounds have one bet and one win or rollback. Some paths add a zero-amount win on loss.
+Each round gets a `RoundId`. One round maps to one streak: exactly one Type 1 bet and one closing transaction. The closing transaction is either a Type 2 win (including a zero-amount win on a loss) or a Type 3 rollback. There are no multiple bets or multiple settlements for the same `RoundId`.
+
+`RoundId` is not a UUID. The format is `streak_` followed by 12 hex characters.
 
 ## Flow
 
@@ -26,8 +28,8 @@ Player starts streak
 | Type | Action | When |
 | --- | --- | --- |
 | `1` | Debit | New streak starts |
-| `2` | Credit | Cashout or round ends |
-| `3` | Refund | Bet must be reversed |
+| `2` | Credit | Cashout or round ends (amount is `0` on a loss) |
+| `3` | Refund | Bet must be reversed. Always refunds the full original stake, never a partial amount |
 
 ## Typical sequence
 

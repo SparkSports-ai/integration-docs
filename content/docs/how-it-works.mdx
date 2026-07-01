@@ -61,7 +61,14 @@ If the session is valid, we return the iframe URL:
 }
 ```
 
-Your frontend loads that URL in an iframe. The token is short-lived, so request a new URL each session.
+| Field | Description |
+| --- | --- |
+| `url` | Full HTTPS URL to load Spark in an iframe. The `jwt` query parameter is a signed, one-time launch token, not your player's `SessionId`. Pass this URL to your frontend and embed it immediately. |
+| `expiresIn` | How long the JWT in `url` stays valid, in **seconds**. Default is `30`. After that window the URL is rejected; call launch again for a fresh one. |
+
+<BrandCallout title="Single-use token">
+  Treat the token as single-use. Request a new URL each time someone starts a session.
+</BrandCallout>
 
 Full field tables and error codes are in [Launch the game](/docs/direct-integration/launch) and [Session validation](/docs/direct-integration/session-validation).
 
@@ -69,10 +76,11 @@ Full field tables and error codes are in [Launch the game](/docs/direct-integrat
 
 SparkSports calls your wallet API during play. We wait for your response before moving on.
 
-```
-Player starts streak   → Type 1 (Bet)      debit stake
-Player cashes out      → Type 2 (Win)      credit winnings
-Error / void           → Type 3 (Rollback) refund bet
+```mermaid
+flowchart LR
+    S1[Player starts streak] --> T1[Type 1 · Bet] --> A1[Debit stake]
+    S2[Player cashes out] --> T2[Type 2 · Win] --> A2[Credit winnings]
+    S3[Error / void] --> T3[Type 3 · Rollback] --> A3[Refund bet]
 ```
 
 See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle](/docs/direct-integration/transaction-lifecycle).
@@ -92,6 +100,20 @@ See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle
 | Launch credentials | HTTP Basic Auth for `POST /api/game/launch` |
 | Callback credentials | Auth we use when calling your wallet API |
 | Staging environment | For dev and QA before production |
-| Operator limits | Stake bounds, win caps, currency settings |
+| Stake limits | Minimum and maximum stake per currency, plus preset amounts for the in-game stake picker |
+| Win caps | Maximum streak multiplier and maximum payout amount per round |
+
+We configure stake limits and win caps with you during onboarding. Tell us the bounds you want:
+
+| Limit | What it controls |
+| --- | --- |
+| Min stake | Lowest amount a player can bet to start a streak (per currency) |
+| Max stake | Highest amount a player can bet to start a streak (per currency) |
+| Max multiplier | Highest multiplier a streak can reach before the game force-cashes out |
+| Max win amount | Highest payout allowed for a single round, in the player's session currency |
+
+Min and max stake are set per currency. Max multiplier and max win amount are operator-wide caps we store on our side and convert into the session currency at launch.
+
+The game loads all of these when a session starts and enforces them during play. A streak ends automatically when it hits either cap, whichever comes first. Payout is `stake × multiplier`, capped at the max win amount.
 
 No SDK. Just HTTPS endpoints on both sides.

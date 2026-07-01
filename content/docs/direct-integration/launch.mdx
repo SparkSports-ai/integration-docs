@@ -7,17 +7,10 @@ When a logged-in player opens Spark, your backend calls our launch endpoint and 
 
 ## Endpoint
 
-Production:
-
-```
-POST https://iframe-launcher.onrender.com/api/game/launch
-```
-
-Staging:
-
-```
-POST https://iframe-launcher-staging.onrender.com/api/game/launch
-```
+| Environment | URL |
+| --- | --- |
+| Production | `POST https://iframe-launcher.onrender.com/api/game/launch` |
+| Staging | `POST https://iframe-launcher-staging.onrender.com/api/game/launch` |
 
 ## Authentication
 
@@ -25,13 +18,39 @@ HTTP Basic Auth. We give you the username and password during onboarding.
 
 ## Request
 
+```http
+POST /api/game/launch
+Authorization: Basic {base64(username:password)}
+Content-Type: application/json
+```
+
+Request body:
+
 ```json
 {
   "SessionId": "your-player-session-id"
 }
 ```
 
-`SessionId` is whatever session token your platform already uses for that player. We pass it to your authenticate endpoint to confirm the session before issuing a URL.
+<TypeTable
+  type={{
+    SessionId: {
+      description:
+        'Active player session token from your platform. We pass it to your authenticate endpoint before issuing a URL. Single-use for launch.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
+Example with curl (staging):
+
+```bash
+curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
+  -u "$LAUNCH_USER:$LAUNCH_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"your-player-session-id"}'
+```
 
 ## Response
 
@@ -42,12 +61,30 @@ HTTP Basic Auth. We give you the username and password during onboarding.
 }
 ```
 
-| Field | Description |
-| --- | --- |
-| `url` | Iframe URL for Spark, with a short-lived token in the query string |
-| `expiresIn` | Token lifetime in seconds (default 30) |
+<TypeTable
+  type={{
+    url: {
+      description:
+        'Full HTTPS URL to load Spark in an iframe. The jwt query parameter is a signed, one-time launch token, not your player SessionId. Load this URL as the iframe src.',
+      type: 'string',
+      required: true,
+    },
+    expiresIn: {
+      description:
+        'How long the JWT in url stays valid, in seconds. Default is 30. After that window the URL is rejected; call launch again for a fresh one.',
+      type: 'integer',
+      required: true,
+    },
+  }}
+/>
 
-Treat the token as single-use. Request a new URL each time someone starts a session.
+<BrandCallout title="Single-use token">
+  Treat the token as single-use. Request a new URL each time someone starts a session.
+</BrandCallout>
+
+<BrandCallout title="Request the URL right before embedding">
+  The token expires in about 30 seconds. Call launch synchronously when the player opens Spark, then load the `url` immediately. Do not pre-fetch or cache the URL.
+</BrandCallout>
 
 ## Embed the game
 
@@ -67,10 +104,21 @@ Put the URL in an iframe:
 
 ## Errors
 
-| HTTP | Meaning |
-| --- | --- |
-| `400` | Missing `SessionId` |
-| `401` | Bad launch credentials |
-| `403` | Operator account inactive |
-| `502` | [Session validation](/docs/direct-integration/session-validation) failed. We also pass through the status your authenticate endpoint returned |
-| `503` | Launch disabled (maintenance) |
+Error responses use the same JSON shape:
+
+```json
+{
+  "error": "BadRequest",
+  "message": "Missing required field: SessionId"
+}
+```
+
+| HTTP | `error` | When |
+| --- | --- | --- |
+| `400` | `BadRequest` | Missing `SessionId` |
+| `401` | `Unauthorized` | Bad launch credentials |
+| `403` | `Forbidden` | Operator account inactive |
+| `401` / `404` / `500` / ... | `OperatorAuthFailed` | Your [authenticate](/docs/direct-integration/session-validation) endpoint returned non-2xx. We return that same HTTP status with `error: "OperatorAuthFailed"`. Your `ErrorCode` is logged, not returned in the body |
+| `502` | `OperatorUnreachable` | Could not reach your authenticate endpoint (network failure) |
+| `502` | `OperatorAuthInvalid` | Your authenticate returned 200 but was missing `SessionId` or `Pincode` |
+| `503` | `MAINTENANCE_MODE` | Launch disabled (maintenance) |

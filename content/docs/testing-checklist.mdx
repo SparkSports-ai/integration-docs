@@ -3,36 +3,157 @@ title: Testing checklist
 description: Verify your integration before production go-live.
 ---
 
-Run through this in staging before asking for production keys.
+Run through this in staging before asking for production keys. Replace the `$LAUNCH_*`, `$CALLBACK_*`, `$PINCODE`, and `$SESSION_ID` placeholders with your staging values.
 
 ## Launch
 
-- [ ] Valid session returns a game URL
-- [ ] Bad Basic Auth returns 401
-- [ ] Missing `SessionId` returns 400
-- [ ] Game loads in iframe on desktop
-- [ ] Game loads in iframe on mobile
+**Valid session returns a game URL**
+
+Call launch with a real session. Expect a 200 with `url` and `expiresIn` in the body.
+
+```bash
+curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
+  -u "$LAUNCH_USER:$LAUNCH_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"<valid-session>"}'
+```
+
+**Bad Basic Auth returns 401**
+
+Send wrong credentials. Expect a 401 with `error: "Unauthorized"`.
+
+```bash
+curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
+  -u "bad:user" -H "Content-Type: application/json" -d '{"SessionId":"x"}' -i
+```
+
+**Missing `SessionId` returns 400**
+
+Send an empty body with valid credentials. Expect a 400 with `error: "BadRequest"`.
+
+```bash
+curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
+  -u "$LAUNCH_USER:$LAUNCH_PASS" -H "Content-Type: application/json" -d '{}' -i
+```
+
+**Game loads in iframe on desktop**
+
+Take the `url` from a launch response and load it in an iframe on a desktop browser. The game UI renders.
+
+**Game loads in iframe on mobile**
+
+Repeat on a mobile browser or a narrow responsive viewport. The UI scales down without horizontal scrolling.
 
 ## Session validation
 
-- [ ] Valid session returns player fields from authenticate
-- [ ] Expired session returns `ErrorCode: 102`
-- [ ] Blocked player returns `ErrorCode: 111`
+Replay these against your own handler to confirm it returns the right shape.
+
+**Valid session returns player fields from authenticate**
+
+Expect a 200 with `SessionId`, `Pincode`, `Username`, `Balance`, `Currency`, and optionally `Country`.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/generic/authenticate" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"<valid-session>"}'
+```
+
+**Expired session returns `ErrorCode: 102`**
+
+Send an expired session. Expect a non-2xx with `ErrorCode: 102`.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/generic/authenticate" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"SessionId":"<expired-session>"}' -i
+```
+
+**Blocked player returns `ErrorCode: 111`**
+
+Send a session for a blocked player. Expect a non-2xx with `ErrorCode: 111`.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/generic/authenticate" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"SessionId":"<blocked-player-session>"}' -i
+```
 
 ## Wallet
 
-- [ ] Type 1 debits the right amount
-- [ ] Type 2 credits the right amount
-- [ ] Type 2 with amount `0` on loss
-- [ ] Type 3 refunds the original bet
-- [ ] Duplicate `ExternalTransactionId` is idempotent
-- [ ] Insufficient balance returns `ErrorCode: 104`
-- [ ] Balance endpoint matches wallet state
+Replay these against your own handler. Use a fresh `ExternalTransactionId` for each call.
+
+**Type 1 debits the right amount**
+
+Send a bet. Expect a 200 with `TransactionId`, `CurrentBalance` (reduced by the stake), and the echoed `ExternalTransactionId`.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"Amount":10.00,"Type":1,"ExternalTransactionId":"tx-1","Description":"bet","GameId":"sparksports","RoundId":"streak_abc123def456","PinCode":"<pin>","SessionId":"<session>"}'
+```
+
+**Type 2 credits the right amount**
+
+Send a win. Expect `CurrentBalance` increased by the amount.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"Amount":20.00,"Type":2,"ExternalTransactionId":"tx-2","Description":"win","GameId":"sparksports","RoundId":"streak_abc123def456","PinCode":"<pin>","SessionId":"<session>"}'
+```
+
+**Type 2 with amount `0` on loss**
+
+Send a zero-amount win. Expect a 200 and `CurrentBalance` unchanged.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"Amount":0,"Type":2,"ExternalTransactionId":"tx-3","Description":"loss","GameId":"sparksports","RoundId":"streak_abc123def456","PinCode":"<pin>","SessionId":"<session>"}'
+```
+
+**Type 3 refunds the original bet**
+
+Send a rollback. Expect `CurrentBalance` restored to the pre-bet value.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"Amount":10.00,"Type":3,"ExternalTransactionId":"tx-4","Description":"rollback","GameId":"sparksports","RoundId":"streak_abc123def456","PinCode":"<pin>","SessionId":"<session>"}'
+```
+
+**Duplicate `ExternalTransactionId` is idempotent**
+
+Run the same Type 1 request twice with the same `ExternalTransactionId`. The second call must return the same `TransactionId` and `CurrentBalance` without debiting again.
+
+**Insufficient balance returns `ErrorCode: 104`**
+
+Send a Type 1 bet larger than the player's balance. Expect a non-2xx with `ErrorCode: 104`.
+
+**Balance endpoint matches wallet state**
+
+Call the balance endpoint and compare the value against your wallet's current balance for the player.
+
+```bash
+curl "$CALLBACK_BASE/api/generic/user/<pin>/balance?sessionId=<session>" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS"
+```
 
 ## End-to-end
 
-- [ ] Launch → bet → cashout → win on balance
-- [ ] Launch → bet → loss → round closes
-- [ ] Bet rolled back on void
+These run through the live game, not curl.
+
+**Launch, bet, cashout, win reflected in balance**
+
+Play a full round in the staging game. Start a streak, cash out, and confirm the win lands in the player's balance.
+
+**Launch, bet, loss, round closed**
+
+Start a streak and let it lose. Confirm the round closes and no win is credited.
+
+**Bet rolled back on void**
+
+Start a streak and trigger a void or error path. Confirm the original stake is refunded.
 
 When staging looks good, ping your SparkSports contact for production provisioning.
