@@ -21,7 +21,7 @@ This page covers the [operator integration](/docs/operator-integration/launch) p
 
 - Launch and session validation must fail for frozen, self-excluded, jurisdiction-blocked, or high-risk accounts.
 - Support tools must not expose launch URLs, credentials, or full wallet payloads.
-- Logs must redact secrets and use `ExternalTransactionId` + `RoundId` for reconciliation.
+- Logs must redact secrets and use `ExternalTransactionId` + `RoundId` (and `X-Correlation-Id` where present) for reconciliation.
 - Wallet idempotency state must survive service restarts, deploys, and pod failover.
 
 ## Launch tokens

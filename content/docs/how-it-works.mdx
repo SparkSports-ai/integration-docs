@@ -65,13 +65,15 @@ If the session is valid, we return the iframe URL:
 
 ```json
 {
-  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci..."
+  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+  "expiresIn": 30
 }
 ```
 
 | Field | Description |
 | --- | --- |
 | `url` | Full HTTPS URL to load Spark in an iframe. The `jwt` query parameter is a signed, short-lived launch token, not your player's `SessionId`. Pass this URL to your frontend and embed it immediately. |
+| `expiresIn` | Seconds until the JWT in `url` expires. |
 
 <BrandCallout title="Request the URL right before embedding">
   The token expires in about 30 seconds. Call launch synchronously when the player opens Spark, then load the `url` immediately. Do not pre-fetch or cache the URL.

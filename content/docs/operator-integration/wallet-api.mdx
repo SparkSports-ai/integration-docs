@@ -23,6 +23,8 @@ sequenceDiagram
 
 HTTP Basic Auth on all wallet endpoints, using the callback credentials from onboarding.
 
+Wallet calls may carry an `X-Correlation-Id` header. Log it alongside `ExternalTransactionId` and `RoundId` for support and reconciliation.
+
 ## Get balance
 
 We call this when we need a fresh balance during play.
