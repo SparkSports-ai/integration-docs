@@ -11,8 +11,6 @@ The OpenAPI file is a machine-readable companion for the Spark Partner API v1 dr
 - [Session validation](/docs/direct-integration/session-validation)
 - [Wallet API](/docs/direct-integration/wallet-api)
 
-{/* v1: NEW OpenAPI reference page. WHY: partners can import the contract into Postman, Insomnia, Stoplight, or codegen tools, while the MDX docs remain the source for lifecycle and money-movement rules that OpenAPI cannot fully express. YAML is the review-friendly source; JSON is generated from it for tools that require JSON. */}
-
 Use the OpenAPI file for endpoint paths, headers, schemas, examples, and error shapes. Use the integration docs for operational rules:
 
 - settlement-once behavior
@@ -20,8 +18,6 @@ Use the OpenAPI file for endpoint paths, headers, schemas, examples, and error s
 - timeout-after-apply retries
 - responsible-gaming and account-blocking behavior
 - launch-token handling and iframe security
-
-{/* v1: explicit boundary between OpenAPI and prose docs. WHY: OpenAPI is good for request/response validation but weak at expressing temporal money rules like "retry must return applied result after timeout" and "a closed round cannot move money again." */}
 
 ## Security schemes
 

@@ -5,8 +5,6 @@ description: Verify your integration before production go-live.
 
 Run through this in staging before asking for production keys.
 
-{/* v1: numeric Types/ErrorCodes swapped for the v1 words and string codes; added signature, currency, reason, and linkage checks. */}
-
 ## Launch
 
 - [ ] Valid session returns a game URL with `expiresAt`
@@ -18,8 +16,6 @@ Run through this in staging before asking for production keys.
 - [ ] Game loads in iframe on desktop
 - [ ] Game loads in iframe on mobile
 
-{/* v1: added credential/log/support checks. WHY: casino incidents often start with stolen credentials or support/vendor access; a technically working launch is still unsafe if secrets land in browser code, logs, tickets, or screenshots. */}
-
 ## Session validation
 
 - [ ] Valid session returns player fields including `currency`
@@ -29,8 +25,6 @@ Run through this in staging before asking for production keys.
 - [ ] Bad signature is rejected
 - [ ] `playerId` is stable and does not contain email, phone, government ID, or raw account number
 - [ ] Frozen, self-excluded, jurisdiction-blocked, and high-risk accounts cannot create playable sessions
-
-{/* v1: added responsible gaming, non-PII, and account-risk checks. WHY: account takeover and blocked-player leakage should fail before launch, not after the iframe opens or after the first bet. */}
 
 ## Wallet
 
@@ -50,15 +44,11 @@ Run through this in staging before asking for production keys.
 - [ ] Timeout followed by retry returns the applied transaction if money moved
 - [ ] Wallet service restart or pod failover does not lose idempotency state
 
-{/* v1: added concurrency, settlement, timestamp freshness, timeout, and failover checks. WHY: outage recovery is where real-money APIs drift unless idempotency is durable outside one process. Nonce replay checks were removed because v1 relies on timestamp freshness plus transactionId idempotency. */}
-
 ## End-to-end
 
 - [ ] Launch, bet, cashout, win lands on balance
 - [ ] Launch, bet, loss, round closes with `WIN` amount `0`
 - [ ] Bet rolled back on void
 - [ ] All wallet logs include `X-Spark-Request-Id`, `transactionId`, `roundId`, and `playerId`
-
-{/* v1: added observability check. WHY: when money movement fails, support needs correlation ids immediately without asking for sensitive payload screenshots. */}
 
 When staging looks good, ping your SparkSports contact for production provisioning.

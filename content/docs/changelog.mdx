@@ -22,12 +22,6 @@ Proposed modernization of the integration contract. Consolidates our direct-oper
 - **Idempotency, timeouts:** specified precisely (dedupe key, mismatch handling, durable dedupe retention, concurrent duplicate behavior, 10s wallet timeout).
 - **Docs:** Mermaid diagrams for every flow.
 
-{/* v1: synced changelog with later spec changes. WHY: reviewer feedback correctly called out that new signature fields, request ids, decimal-string money, new error codes, and session limits must be visible in the version summary, not only on leaf pages. displayCurrency was removed until the game/product behavior is confirmed. */}
-
-{/* v1: backend sign-off required before merging/publishing. WHY: this draft now commits Spark to emitting X-Spark-Request-Id, canonical HMAC signatures, timeout-safe retry responses, and RATE_LIMITED if launch throttling is shipped. It also commits partners to durable idempotency retention and atomic ledger behavior. These are the right target controls, but they are implementation scope, not copy edits. */}
-
-{/* v1: REVIEWER NOTE (strip before publish, like every other v1 comment). Each change above appears inline at its source as a v1-tagged MDX comment that explains what changed and why. These comments do NOT render on the site (they are JSX comments) and are removable in one pass with grep on the v1 tag across content/docs. The point is a reviewer can read the diff and see the rationale next to each change. */}
-
 ## r0: current live contract
 
-The BetLive-style direct integration: HTTP Basic Auth, numeric `Type` (`1`/`2`/`3`), numeric `ErrorCode`, no currency on transactions, `expiresIn`. Still what live operators use until v1 ships. We will keep a compatibility appendix for them.
+The r0 direct integration: HTTP Basic Auth, numeric `Type` (`1`/`2`/`3`), numeric `ErrorCode`, no currency on transactions, `expiresIn`. Still what live operators use until v1 ships. We will keep a compatibility appendix for them.

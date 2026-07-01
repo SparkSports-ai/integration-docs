@@ -7,11 +7,7 @@ Each round gets a `roundId`. Most rounds have one `BET` and one `WIN` or `ROLLBA
 
 Amounts are decimal strings and every wallet transaction carries `currency`. The transaction currency must match the player session currency and the original `BET`.
 
-{/* v1: added amount/currency invariant to lifecycle. WHY: wallet-api had the rule, but lifecycle is where reviewers reason about round state; currency mismatch is a settlement bug, not just a field-validation bug. */}
-
 ## Flow
-
-{/* v1: was an ASCII tree. WHY: replaced with a Mermaid flowchart (renders to SVG at build time, see how-it-works) so every flow on the site is a real diagram. Types are words; the loss path now shows reason=loss + amount 0 instead of a bare "Win, amount=0". */}
 
 ```mermaid
 flowchart TD
@@ -29,8 +25,6 @@ flowchart TD
 
 ## Transaction types
 
-{/* v1: numeric Type column dropped; words only. */}
-
 | Type | Action | When |
 | --- | --- | --- |
 | `BET` | Debit | New streak starts |
@@ -39,8 +33,6 @@ flowchart TD
 
 ## Linking settlements to the bet
 
-{/* v1: NEW section. WHY: previously nothing tied a WIN/ROLLBACK back to its BET, so reconciliation relied on roundId alone. */}
-
 A `WIN` or `ROLLBACK` carries `betTransactionId`, the `transactionId` of the `BET` it settles or reverses. Use it to reconcile, and to make sure a `ROLLBACK` reverses exactly the right debit.
 
 After a round has a closing `WIN` or `ROLLBACK`, another settlement for the same `BET` must not move money. Return `ROUND_ALREADY_SETTLED`.
@@ -48,8 +40,6 @@ After a round has a closing `WIN` or `ROLLBACK`, another settlement for the same
 If the transaction currency does not match the session or original `BET`, return `CURRENCY_MISMATCH`.
 
 See the full [Wallet API settlement rules](/docs/direct-integration/wallet-api#settlement-rules).
-
-{/* v1: synced lifecycle with wallet-api settlement errors and linked to the canonical rules block. WHY: the lifecycle page should state the same terminal-state and currency rules as the wallet error table, otherwise partners can implement the flow without noticing the rejection cases. */}
 
 ## Typical sequence
 
@@ -63,5 +53,3 @@ See the full [Wallet API settlement rules](/docs/direct-integration/wallet-api#s
 ## Retries
 
 We retry wallet calls when the failure looks transient (`5xx` or timeout). Your handler must be idempotent on `transactionId` so a retry never double-charges or double-credits. If a timed-out call later applies, the retry must return the applied response rather than an unknown result. See [Wallet API retries](/docs/direct-integration/wallet-api#retries).
-
-{/* v1: added timeout-after-apply rule to lifecycle. WHY: this is the money-path retry invariant reviewers need to see even before reading the detailed wallet page. */}

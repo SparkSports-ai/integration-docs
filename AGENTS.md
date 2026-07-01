@@ -81,9 +81,9 @@ Casino operator backend teams implementing the Spark integration with SparkSport
 | **Operator / casino** | The integrating partner |
 | **Launch API** | SparkSports endpoint that returns a Spark iframe URL |
 | **Callback / wallet API** | Endpoints the operator exposes for session validation and transactions |
-| **Pincode** | Operator's stable player identifier (returned from authenticate) |
-| **SessionId** | Operator's active player session token |
-| **RoundId** | UUID identifying one game round |
+| **playerId** | Operator's stable player identifier (returned from authenticate) |
+| **sessionId** | Operator's active player session token |
+| **roundId** | UUID identifying one game round |
 
 ## Writing style
 

@@ -31,8 +31,6 @@ sequenceDiagram
     Backend-->>Player: Loads Spark in iframe
 ```
 
-{/* v1: diagram updated: launch is Bearer (was Basic Auth), authenticate is signed, response is expiresAt (was url + expiresIn), and the profile carries currency/optional limits. WHY: the overview must match the detailed v1 callback and session-validation contract. */}
-
 Your backend calls `POST /api/game/launch` with a Bearer token:
 
 ```json
@@ -58,8 +56,6 @@ We validate that session by calling your `POST /api/generic/authenticate` with t
 }
 ```
 
-{/* v1: profile example synced with session-validation. WHY: balance must be a decimal string and limits may narrow operator stake bounds. displayCurrency was removed because it implies separate display-currency rendering that needs product confirmation before it belongs in the partner contract. */}
-
 If the session is valid, we return the iframe URL:
 
 ```json
@@ -76,8 +72,6 @@ Full field tables and error codes are in [Launch the game](/docs/direct-integrat
 ## Wallet flow
 
 SparkSports calls your wallet API during play. We wait for your response before moving on.
-
-{/* v1: was an ASCII block with numeric Type 1/2/3. WHY: real diagram + word types, consistent with the rest of v1. */}
 
 ```mermaid
 flowchart LR
@@ -97,8 +91,6 @@ See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle
 | `/api/transaction/process` | POST | Bet, win, rollback |
 
 Your callback endpoints use Bearer auth plus `X-Spark-Signature`, `X-Spark-Timestamp`, and `X-Spark-Request-Id`.
-
-{/* v1: added callback header summary. WHY: the overview previously mentioned only credentials in onboarding, leaving signature and request-id fields hidden in leaf pages. */}
 
 ## What SparkSports sends you
 

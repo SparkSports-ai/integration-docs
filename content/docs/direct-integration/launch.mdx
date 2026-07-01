@@ -23,11 +23,7 @@ POST https://iframe-launcher-staging.onrender.com/api/game/launch
 
 ## Authentication
 
-{/* v1: was "HTTP Basic Auth". WHY: matches the Bearer move across the rest of v1; one auth scheme for the whole contract instead of Basic here and Bearer elsewhere. */}
-
 **Bearer token** (`Authorization: Bearer <token>`). We issue it during onboarding. Call this endpoint only from your backend; never from browser code.
-
-{/* v1: added backend-only instruction. WHY: launch credentials must never be exposed to the player browser, where they can be copied and reused. */}
 
 ## Request
 
@@ -48,20 +44,14 @@ POST https://iframe-launcher-staging.onrender.com/api/game/launch
 }
 ```
 
-{/* v1: was "expiresIn": 30 (relative seconds). WHY: relative seconds is ambiguous ("30s from when?") and the response latency eats into it. expiresAt is an absolute UNIX timestamp read straight from the JWT's exp claim, so it is the token's real expiry and is not affected by network delay. NOTE: expiresIn was never an Upgaming requirement; their spec returns { url } only. This field is for direct operators. */}
-
 | Field | Description |
 | --- | --- |
 | `url` | Iframe URL for Spark, with a short-lived token in the query string |
 | `expiresAt` | Token expiry as a UNIX timestamp (seconds). Same value as the JWT `exp` claim |
 
-{/* v1: removed "Treat the token as single-use." WHY: it was not true. The token is currently replayable within its ~30s lifetime; nothing consumes it. Single-use enforcement is a tracked backend item. Until it ships, the honest guidance is: short-lived, request a fresh one each session. */}
-
 The token is short-lived (about 30 seconds). Request a new URL each time a player opens Spark; do not cache or share it.
 
 Log the launch request without the JWT query string. Treat the returned `url` as sensitive until it expires.
-
-{/* v1: added log hygiene for launch URLs. WHY: the JWT is in the query string, so full URL logs become bearer-token logs until expiry. */}
 
 ## Embed the game
 
@@ -81,16 +71,12 @@ Put the URL in an iframe:
 
 Recommended iframe attributes:
 
-{/* v1: added iframe hardening. WHY: casino pages often run many third-party scripts; least-privilege iframe permissions and CSP reduce what a compromised parent or embedded context can access. */}
-
 - Use `allow="fullscreen"` only; do not grant camera, microphone, geolocation, clipboard, or payment permissions.
 - Set the parent page `referrer-policy` to `strict-origin-when-cross-origin` or stricter.
 - Use `frame-src` / `child-src` in your Content Security Policy to allow only the Spark iframe origins we give you.
 - Do not put the launch URL in analytics events, frontend logs, crash reports, or support screenshots.
 
 ## Errors
-
-{/* v1: numeric-free; HTTP status plus a string code, consistent with the wallet error model. */}
 
 | HTTP | `error.code` | Meaning |
 | --- | --- | --- |
@@ -100,5 +86,3 @@ Recommended iframe attributes:
 | `502` | `SESSION_VALIDATION_FAILED` | Your [authenticate](/docs/direct-integration/session-validation) call failed; we pass through the reason |
 | `503` | `LAUNCH_DISABLED` | Launch disabled (maintenance) |
 | `429` | `RATE_LIMITED` | Too many launch attempts for the operator or source |
-
-{/* v1: added RATE_LIMITED. WHY: launch is a session-minting endpoint, so operators need a documented response for burst controls and abuse throttling. */}

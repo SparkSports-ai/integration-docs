@@ -22,13 +22,10 @@ learned running both a direct-operator (Basic Auth, numeric codes) and an aggreg
 - **Durable idempotency, stated timeouts, and timeout-after-apply retry behavior** for
   wallet calls.
 
-{/* v1: synced overview bullets with the hardened v1 scope. WHY: the landing page previously described only the earlier broad changes, so it under-represented the actual proposed contract: canonical HMAC, decimal strings, currency invariants, settlement-once, and durable idempotency. */}
-
 Items tagged **Proposed** below require backend work before they go live. Live
 integrations keep using the current contract until v1 ships. See the
 [Changelog](/docs/changelog) for revision history.
 
-{/* v1: backend sign-off required before publish. WHY: v1 now commits Spark to emitting X-Spark-Request-Id, canonical HMAC signatures, RATE_LIMITED when throttling launch, and durable retry semantics. Those are correct target requirements but must be confirmed as backend scope, not only documentation changes. */}
 </Callout>
 
 Spark is SparkSports' live sports streak game. Players pick outcomes across consecutive live markets, build a multiplier, and cash out before the streak ends.
