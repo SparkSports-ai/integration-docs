@@ -398,9 +398,9 @@ Balance responses should include only settled wallet balance. Do not subtract a 
 
 The **HTTP status is the signal**:
 
-- `200` — applied
-- `4xx` — business rejection, we will **not** retry, the player sees it
-- `5xx` or timeout — transient, we retry
+- `200`: applied
+- `4xx`: business rejection, we will **not** retry, the player sees it
+- `5xx` or timeout: transient, we retry
 
 Include a body so we can show the right message:
 
