@@ -5,86 +5,53 @@ description: Request a signed iframe URL when a player opens Spark.
 
 When a logged-in player opens Spark, your backend calls our launch endpoint and gets back a URL to load in an iframe.
 
+<Callout type="info">**Proposed for v1.** Bearer auth and the absolute `expiresAt` field below are the target v1 contract and need backend work before they go live.</Callout>
+
 ## Endpoint
 
-| Environment | URL |
-| --- | --- |
-| Production | `POST https://iframe-launcher.onrender.com/api/game/launch` |
-| Staging | `POST https://iframe-launcher-staging.onrender.com/api/game/launch` |
+Production:
+
+```
+POST https://iframe-launcher.onrender.com/api/game/launch
+```
+
+Staging:
+
+```
+POST https://iframe-launcher-staging.onrender.com/api/game/launch
+```
 
 ## Authentication
 
-HTTP Basic Auth. We give you the username and password during onboarding.
+**Bearer token** (`Authorization: Bearer <token>`). We issue it during onboarding. Call this endpoint only from your backend; never from browser code.
 
 ## Request
 
-```http
-POST /api/game/launch
-Authorization: Basic {base64(username:password)}
-Content-Type: application/json
-```
-
-Request body:
-
 ```json
 {
-  "SessionId": "your-player-session-id"
+  "sessionId": "your-player-session-id"
 }
 ```
 
-<TypeTable
-  type={{
-    SessionId: {
-      description:
-        'Active player session token from your platform. We pass it to your authenticate endpoint before issuing a URL. Single-use for launch.',
-      type: 'string',
-      required: true,
-    },
-  }}
-/>
-
-Example with curl (staging):
-
-```bash
-curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
-  -u "$LAUNCH_USER:$LAUNCH_PASS" \
-  -H "Content-Type: application/json" \
-  -d '{"SessionId":"your-player-session-id"}'
-```
+`sessionId` is whatever session token your platform already uses for that player. We pass it to your authenticate endpoint to confirm the session before issuing a URL.
 
 ## Response
 
 ```json
 {
-  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
-  "expiresIn": 30
+  "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+  "expiresAt": 1782763200
 }
 ```
 
-<TypeTable
-  type={{
-    url: {
-      description:
-        'Full HTTPS URL to load Spark in an iframe. The jwt query parameter is a signed, one-time launch token, not your player SessionId. Load this URL as the iframe src.',
-      type: 'string',
-      required: true,
-    },
-    expiresIn: {
-      description:
-        'How long the JWT in url stays valid, in seconds. Default is 30. After that window the URL is rejected; call launch again for a fresh one.',
-      type: 'integer',
-      required: true,
-    },
-  }}
-/>
+| Field | Description |
+| --- | --- |
+| `url` | Iframe URL for Spark, with a short-lived token in the query string |
+| `expiresAt` | Token expiry as a UNIX timestamp (seconds). Same value as the JWT `exp` claim |
 
-<BrandCallout title="Single-use token">
-  Treat the token as single-use. Request a new URL each time someone starts a session.
-</BrandCallout>
+The token is short-lived (about 30 seconds). Request a new URL each time a player opens Spark; do not cache or share it.
 
-<BrandCallout title="Request the URL right before embedding">
-  The token expires in about 30 seconds. Call launch synchronously when the player opens Spark, then load the `url` immediately. Do not pre-fetch or cache the URL.
-</BrandCallout>
+Log the launch request without the JWT query string. Treat the returned `url` as sensitive until it expires.
 
 ## Embed the game
 
@@ -92,7 +59,7 @@ Put the URL in an iframe:
 
 ```html
 <iframe
-  src="https://spark.sparksports.ai/game/sparksports?jwt=..."
+  src="https://staging.spark.sparksports.ai/game/sparksports?jwt=..."
   width="100%"
   height="700"
   frameborder="0"
@@ -100,25 +67,22 @@ Put the URL in an iframe:
 ></iframe>
 ```
 
-1200 × 800 px works well as a max size. The UI scales down from there.
+1200 x 800 px works well as a max size. The UI scales down from there.
+
+Recommended iframe attributes:
+
+- Use `allow="fullscreen"` only; do not grant camera, microphone, geolocation, clipboard, or payment permissions.
+- Set the parent page `referrer-policy` to `strict-origin-when-cross-origin` or stricter.
+- Use `frame-src` / `child-src` in your Content Security Policy to allow only the Spark iframe origins we give you.
+- Do not put the launch URL in analytics events, frontend logs, crash reports, or support screenshots.
 
 ## Errors
 
-Error responses use the same JSON shape:
-
-```json
-{
-  "error": "BadRequest",
-  "message": "Missing required field: SessionId"
-}
-```
-
-| HTTP | `error` | When |
+| HTTP | `error.code` | Meaning |
 | --- | --- | --- |
-| `400` | `BadRequest` | Missing `SessionId` |
-| `401` | `Unauthorized` | Bad launch credentials |
-| `403` | `Forbidden` | Operator account inactive |
-| `401` / `404` / `500` / ... | `OperatorAuthFailed` | Your [authenticate](/docs/direct-integration/session-validation) endpoint returned non-2xx. We return that same HTTP status with `error: "OperatorAuthFailed"`. Your `ErrorCode` is logged, not returned in the body |
-| `502` | `OperatorUnreachable` | Could not reach your authenticate endpoint (network failure) |
-| `502` | `OperatorAuthInvalid` | Your authenticate returned 200 but was missing `SessionId` or `Pincode` |
-| `503` | `MAINTENANCE_MODE` | Launch disabled (maintenance) |
+| `400` | `MISSING_SESSION_ID` | Request had no `sessionId` |
+| `401` | `UNAUTHORIZED` | Bad bearer token |
+| `403` | `OPERATOR_INACTIVE` | Operator account inactive |
+| `502` | `SESSION_VALIDATION_FAILED` | Your [authenticate](/docs/direct-integration/session-validation) call failed; we pass through the reason |
+| `503` | `LAUNCH_DISABLED` | Launch disabled (maintenance) |
+| `429` | `RATE_LIMITED` | Too many launch attempts for the operator or source |

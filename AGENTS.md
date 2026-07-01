@@ -1,6 +1,12 @@
 # Integration docs: agent instructions
 
-Partner-facing technical documentation for casino operators integrating the Spark game with SparkSports. Built with [Fumadocs](https://fumadocs.dev) and Next.js.
+The **Spark Partner Portal** (`partners.sparksports.ai`): partner-facing site for casino operators integrating the Spark game with SparkSports. Built with [Fumadocs](https://fumadocs.dev) and Next.js, gated behind Cloudflare Access.
+
+Today the portal is the integration **Documentation** section. **Changelog** and **Support** sections are planned; add them only when they have real content (see Portal sections below). The repo and Render service stay named `integration-docs`; the portal name lives in the UI (`lib/shared.ts` `appName`, `app/layout.tsx` metadata).
+
+## Portal sections
+
+The site currently has one section, the docs tree under `content/docs/`. To add a section (e.g. Changelog, Support) as a switchable sidebar tab, give it its own root folder under `content/docs/` with a `meta.json` containing `"root": true` plus a `title` and `icon`, then move the existing docs into a sibling `documentation/` root folder so they become peers. Do this when there is content to put in the new section, not before.
 
 ## Project layout
 
@@ -75,9 +81,9 @@ Casino operator backend teams implementing the Spark integration with SparkSport
 | **Operator / casino** | The integrating partner |
 | **Launch API** | SparkSports endpoint that returns a Spark iframe URL |
 | **Callback / wallet API** | Endpoints the operator exposes for session validation and transactions |
-| **Pincode** | Operator's stable player identifier (returned from authenticate) |
-| **SessionId** | Operator's active player session token |
-| **RoundId** | UUID identifying one game round |
+| **playerId** | Operator's stable player identifier (returned from authenticate) |
+| **sessionId** | Operator's active player session token |
+| **roundId** | UUID identifying one game round |
 
 ## Writing style
 

@@ -1,0 +1,37 @@
+---
+title: OpenAPI reference
+description: Machine-readable Spark Partner API v1 contract.
+---
+
+The OpenAPI file is a machine-readable companion for the Spark Partner API v1 draft.
+
+- [Download OpenAPI YAML](/openapi/spark-partner-api-v1.yaml)
+- [Download OpenAPI JSON](/openapi/spark-partner-api-v1.json)
+- [Launch the game](/docs/direct-integration/launch)
+- [Session validation](/docs/direct-integration/session-validation)
+- [Wallet API](/docs/direct-integration/wallet-api)
+
+Use the OpenAPI file for endpoint paths, headers, schemas, examples, and error shapes. Use the integration docs for operational rules:
+
+- settlement-once behavior
+- idempotency retention and atomic ledger handling
+- timeout-after-apply retries
+- responsible-gaming and account-blocking behavior
+- launch-token handling and iframe security
+
+## Security schemes
+
+The OpenAPI spec models the launch bearer token and callback headers:
+
+- `Authorization: Bearer <token>`
+- `X-Spark-Signature`
+- `X-Spark-Timestamp`
+- `X-Spark-Request-Id`
+
+The callback signature canonical string is:
+
+```text
+{timestamp}.{METHOD}.{path-and-query}.{rawBody}
+```
+
+See [Wallet API authentication](/docs/direct-integration/wallet-api#authentication) for verification details.

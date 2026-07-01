@@ -1,11 +1,12 @@
 {
-  "title": "Integration Guide",
+  "title": "Documentation",
   "pages": [
     "index",
     "how-it-works",
     "---Direct Integration---",
     "...direct-integration",
     "---Reference---",
+    "openapi",
     "environments",
     "security",
     "testing-checklist",

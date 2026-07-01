@@ -2,6 +2,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { MDXComponents } from 'mdx/types';
 import type { CSSProperties, ReactNode } from 'react';
+import { CopyValue } from './copy-value';
 import { Mermaid } from './mermaid';
 
 const TOXIC_GREEN = '#e1ff83';
@@ -78,6 +79,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ...defaultMdxComponents,
     ApiTypeTable,
     BrandCallout,
+    CopyValue,
     Mermaid,
     TypeTable: ApiTypeTable,
     ...components,
