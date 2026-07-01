@@ -1,0 +1,133 @@
+---
+title: Session validation
+description: Endpoint your platform must expose so SparkSports can validate player sessions.
+---
+
+We call your backend before handing out a launch URL. If the session is not valid, the launch fails.
+
+<Callout type="info">**Proposed: v1 (draft).** A future contract replaces Basic Auth with a Bearer token plus a request signature, and numeric `ErrorCode` with string error codes. Not live yet. See the [Changelog](/docs/changelog).</Callout>
+
+## Your endpoint
+
+```
+POST {your-callback-base-url}/api/generic/authenticate
+```
+
+You tell us the callback base URL during onboarding.
+
+## Authentication
+
+HTTP Basic Auth with the callback credentials we configure together. We send them on every call.
+
+## Request
+
+```json
+{
+  "SessionId": "your-player-session-id"
+}
+```
+
+<TypeTable
+  type={{
+    SessionId: {
+      description: 'Active player session token from your platform.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
+Replay this against your handler to test your implementation:
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/generic/authenticate" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"your-player-session-id"}'
+```
+
+## Success response
+
+```json
+{
+  "SessionId": "your-player-session-id",
+  "Pincode": "player-unique-id",
+  "Username": "john_doe",
+  "Balance": 1500.00,
+  "Currency": "USD",
+  "Country": "US"
+}
+```
+
+<TypeTable
+  type={{
+    SessionId: {
+      description: 'Same session ID we sent.',
+      type: 'string',
+      required: true,
+    },
+    Pincode: {
+      description: 'Stable player ID on your side.',
+      type: 'string',
+      required: true,
+    },
+    Username: {
+      description: 'Display name.',
+      type: 'string',
+      required: true,
+    },
+    Balance: {
+      description: 'Wallet balance at launch.',
+      type: 'number',
+      required: true,
+    },
+    Currency: {
+      description: (
+        <>
+          <a href="https://en.wikipedia.org/wiki/ISO_4217" target="_blank" rel="noopener noreferrer">
+            ISO 4217
+          </a>{' '}
+          code (USD, EUR, etc.).
+        </>
+      ),
+      type: 'string',
+      required: true,
+    },
+    Country: {
+      description: (
+        <>
+          <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2" target="_blank" rel="noopener noreferrer">
+            ISO 3166-1 alpha-2
+          </a>{' '}
+          code.
+        </>
+      ),
+      type: 'string',
+    },
+  }}
+/>
+
+## Error response
+
+```json
+{
+  "ErrorCode": 102,
+  "Message": "Session expired"
+}
+```
+
+| ErrorCode | Meaning |
+| --- | --- |
+| `102` | Session invalid or expired |
+| `111` | Player blocked |
+| `126` | Bad callback credentials (usually a config mismatch on our side) |
+
+We do not retry authenticate. One attempt; if it fails, launch fails.
+
+## Notes
+
+- `Pincode` is the player key for all later wallet calls.
+- `Balance`, `Username`, and `Currency` are required. If any is missing, launch fails with `OperatorAuthInvalid`.
+- `Country` is optional. If you omit it, we store an empty value.
+- Balance at authenticate is a snapshot. During play we read balance from your [wallet API](/docs/operator-integration/wallet-api).
+- Keep `SessionId` on your backend. Do not pass it into client-side game code.

@@ -1,0 +1,1033 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Spark Partner API",
+    "version": "1.0.0-draft",
+    "summary": "Proposed SparkSports partner integration contract.",
+    "description": "Machine-readable companion for the Spark Partner API v1 draft.\n\nThis file describes endpoint shapes, headers, schemas, and common examples.\nLifecycle rules such as settlement-once, timeout-after-apply, and durable\nidempotency are defined in the partner documentation.\n"
+  },
+  "servers": [
+    {
+      "url": "https://iframe-launcher.onrender.com",
+      "description": "Spark launch API production"
+    },
+    {
+      "url": "https://iframe-launcher-staging.onrender.com",
+      "description": "Spark launch API staging"
+    },
+    {
+      "url": "https://partner.example.com",
+      "description": "Partner callback base URL"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Spark-hosted",
+      "description": "Endpoints hosted by SparkSports."
+    },
+    {
+      "name": "Partner-hosted",
+      "description": "Endpoints hosted by the operator or platform partner."
+    }
+  ],
+  "paths": {
+    "/api/game/launch": {
+      "post": {
+        "tags": [
+          "Spark-hosted"
+        ],
+        "summary": "Request a Spark iframe URL.",
+        "operationId": "launchGame",
+        "security": [
+          {
+            "launchBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchRequest"
+              },
+              "examples": {
+                "valid": {
+                  "value": {
+                    "sessionId": "your-player-session-id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Launch URL issued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "value": {
+                      "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
+                      "expiresAt": 1782763200
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/MissingSessionId"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/OperatorInactive"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "502": {
+            "$ref": "#/components/responses/SessionValidationFailed"
+          },
+          "503": {
+            "$ref": "#/components/responses/LaunchDisabled"
+          }
+        }
+      }
+    },
+    "/api/generic/authenticate": {
+      "post": {
+        "tags": [
+          "Partner-hosted"
+        ],
+        "summary": "Validate a player session before Spark issues a launch URL.",
+        "operationId": "authenticateSession",
+        "security": [
+          {
+            "callbackBearer": [],
+            "sparkSignature": [],
+            "sparkTimestamp": [],
+            "sparkRequestId": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionValidationRequest"
+              },
+              "examples": {
+                "valid": {
+                  "value": {
+                    "sessionId": "your-player-session-id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionValidationResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "value": {
+                      "sessionId": "your-player-session-id",
+                      "playerId": "player-unique-id",
+                      "username": "john_doe",
+                      "balance": "1500.00",
+                      "currency": "USD",
+                      "country": "US",
+                      "limits": {
+                        "minStake": "1.00",
+                        "maxStake": "100.00"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionExpired"
+          },
+          "403": {
+            "$ref": "#/components/responses/PlayerBlocked"
+          }
+        }
+      }
+    },
+    "/api/generic/user/{playerId}/balance": {
+      "get": {
+        "tags": [
+          "Partner-hosted"
+        ],
+        "summary": "Return the player's current settled wallet balance.",
+        "operationId": "getBalance",
+        "security": [
+          {
+            "callbackBearer": [],
+            "sparkSignature": [],
+            "sparkTimestamp": [],
+            "sparkRequestId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Stable non-PII player id returned from session validation."
+          },
+          {
+            "name": "sessionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Active player session id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current settled balance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "value": {
+                      "balance": "1500.00",
+                      "currency": "USD"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/InvalidPlayerOrSession"
+          },
+          "403": {
+            "$ref": "#/components/responses/PlayerBlocked"
+          }
+        }
+      }
+    },
+    "/api/transaction/process": {
+      "post": {
+        "tags": [
+          "Partner-hosted"
+        ],
+        "summary": "Process a bet, win, or rollback.",
+        "operationId": "processTransaction",
+        "security": [
+          {
+            "callbackBearer": [],
+            "sparkSignature": [],
+            "sparkTimestamp": [],
+            "sparkRequestId": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionRequest"
+              },
+              "examples": {
+                "bet": {
+                  "summary": "Debit a new streak stake.",
+                  "value": {
+                    "type": "BET",
+                    "amount": "10.00",
+                    "currency": "USD",
+                    "transactionId": "spark-tx-bet-abc123",
+                    "roundId": "round-uuid-here",
+                    "playerId": "player-unique-id",
+                    "sessionId": "your-player-session-id",
+                    "description": "Spark streak bet"
+                  }
+                },
+                "winCashout": {
+                  "summary": "Credit a cashout payout and close the round.",
+                  "value": {
+                    "type": "WIN",
+                    "amount": "18.50",
+                    "currency": "USD",
+                    "transactionId": "spark-tx-win-def456",
+                    "betTransactionId": "spark-tx-bet-abc123",
+                    "roundId": "round-uuid-here",
+                    "playerId": "player-unique-id",
+                    "sessionId": "your-player-session-id",
+                    "reason": "cashout",
+                    "roundFinished": true
+                  }
+                },
+                "winLoss": {
+                  "summary": "Close a losing round with zero payout.",
+                  "value": {
+                    "type": "WIN",
+                    "amount": "0",
+                    "currency": "USD",
+                    "transactionId": "spark-tx-loss-def456",
+                    "betTransactionId": "spark-tx-bet-abc123",
+                    "roundId": "round-uuid-here",
+                    "playerId": "player-unique-id",
+                    "sessionId": "your-player-session-id",
+                    "reason": "loss",
+                    "roundFinished": true
+                  }
+                },
+                "rollback": {
+                  "summary": "Refund the original bet.",
+                  "value": {
+                    "type": "ROLLBACK",
+                    "amount": "10.00",
+                    "currency": "USD",
+                    "transactionId": "spark-tx-rb-def456",
+                    "betTransactionId": "spark-tx-bet-abc123",
+                    "roundId": "round-uuid-here",
+                    "playerId": "player-unique-id",
+                    "sessionId": "your-player-session-id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction applied or idempotently replayed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                },
+                "examples": {
+                  "bet": {
+                    "value": {
+                      "operatorTransactionId": "987654321",
+                      "balance": "1490.00",
+                      "currency": "USD",
+                      "transactionId": "spark-tx-bet-abc123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Business validation rejection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "insufficientBalance": {
+                    "value": {
+                      "error": {
+                        "code": "INSUFFICIENT_BALANCE",
+                        "message": "Insufficient balance"
+                      }
+                    }
+                  },
+                  "currencyMismatch": {
+                    "value": {
+                      "error": {
+                        "code": "CURRENCY_MISMATCH",
+                        "message": "Request currency does not match the session or original bet"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/InvalidPlayerOrSession"
+          },
+          "403": {
+            "$ref": "#/components/responses/PlayerBlocked"
+          },
+          "409": {
+            "description": "Duplicate or terminal-state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "duplicateMismatch": {
+                    "value": {
+                      "error": {
+                        "code": "DUPLICATE_MISMATCH",
+                        "message": "Transaction id already exists with different immutable fields"
+                      }
+                    }
+                  },
+                  "roundAlreadySettled": {
+                    "value": {
+                      "error": {
+                        "code": "ROUND_ALREADY_SETTLED",
+                        "message": "Round already settled"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/OperatorError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "launchBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token used by the partner backend when calling Spark launch."
+      },
+      "callbackBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token Spark sends to partner callback endpoints."
+      },
+      "sparkSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Spark-Signature",
+        "description": "Hex HMAC-SHA256 of `{timestamp}.{METHOD}.{path-and-query}.{rawBody}`."
+      },
+      "sparkTimestamp": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Spark-Timestamp",
+        "description": "UNIX timestamp in seconds. Reject values outside the 60-second replay window."
+      },
+      "sparkRequestId": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Spark-Request-Id",
+        "description": "Correlation id for support and reconciliation."
+      }
+    },
+    "schemas": {
+      "DecimalString": {
+        "type": "string",
+        "pattern": "^[0-9]+(\\.[0-9]+)?$",
+        "examples": [
+          "10.00",
+          "0",
+          "1490.00"
+        ],
+        "description": "Money amount serialized as a decimal string. JSON numbers are not part of the v1 contract."
+      },
+      "Currency": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 3,
+        "pattern": "^[A-Z]{3}$",
+        "examples": [
+          "USD"
+        ]
+      },
+      "LaunchRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sessionId"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          }
+        }
+      },
+      "LaunchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "expiresAt"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "UNIX timestamp in seconds. Same value as the JWT `exp` claim."
+          }
+        }
+      },
+      "SessionValidationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sessionId"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          }
+        }
+      },
+      "SessionValidationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sessionId",
+          "playerId",
+          "username",
+          "balance",
+          "currency"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "playerId": {
+            "type": "string",
+            "description": "Stable non-PII player id."
+          },
+          "username": {
+            "type": "string"
+          },
+          "balance": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "pattern": "^[A-Z]{2}$"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/SessionLimits"
+          }
+        }
+      },
+      "SessionLimits": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "minStake": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "maxStake": {
+            "$ref": "#/components/schemas/DecimalString"
+          }
+        },
+        "description": "Optional session-level limits. They may narrow configured Spark limits, not widen them."
+      },
+      "BalanceResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "balance",
+          "currency"
+        ],
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          }
+        }
+      },
+      "WinReason": {
+        "type": "string",
+        "enum": [
+          "cashout",
+          "loss",
+          "cap_reached"
+        ]
+      },
+      "TransactionRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetTransactionRequest"
+          },
+          {
+            "$ref": "#/components/schemas/WinTransactionRequest"
+          },
+          {
+            "$ref": "#/components/schemas/RollbackTransactionRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "BET": "#/components/schemas/BetTransactionRequest",
+            "WIN": "#/components/schemas/WinTransactionRequest",
+            "ROLLBACK": "#/components/schemas/RollbackTransactionRequest"
+          }
+        }
+      },
+      "BetTransactionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "amount",
+          "currency",
+          "transactionId",
+          "roundId",
+          "playerId",
+          "sessionId"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "BET"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Spark transaction id and idempotency key."
+          },
+          "roundId": {
+            "type": "string",
+            "description": "Spark round id."
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "WinTransactionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "amount",
+          "currency",
+          "transactionId",
+          "roundId",
+          "playerId",
+          "sessionId",
+          "betTransactionId",
+          "reason",
+          "roundFinished"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "WIN"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Spark transaction id and idempotency key."
+          },
+          "roundId": {
+            "type": "string",
+            "description": "Spark round id."
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "betTransactionId": {
+            "type": "string",
+            "description": "References the original BET transaction id this win settles."
+          },
+          "reason": {
+            "$ref": "#/components/schemas/WinReason"
+          },
+          "roundFinished": {
+            "type": "boolean",
+            "description": "True when this win closes the round."
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "RollbackTransactionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "amount",
+          "currency",
+          "transactionId",
+          "roundId",
+          "playerId",
+          "sessionId",
+          "betTransactionId"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ROLLBACK"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/DecimalString",
+            "description": "Must equal the original BET amount. Rollback refunds the full original bet, never a partial amount."
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Spark transaction id and idempotency key."
+          },
+          "roundId": {
+            "type": "string",
+            "description": "Spark round id."
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "betTransactionId": {
+            "type": "string",
+            "description": "References the original BET transaction id this rollback reverses."
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operatorTransactionId",
+          "balance",
+          "currency",
+          "transactionId"
+        ],
+        "properties": {
+          "operatorTransactionId": {
+            "type": "string",
+            "description": "Operator-side transaction id."
+          },
+          "balance": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Echo of Spark transaction id."
+          }
+        }
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "MISSING_SESSION_ID",
+          "UNAUTHORIZED",
+          "OPERATOR_INACTIVE",
+          "SESSION_VALIDATION_FAILED",
+          "LAUNCH_DISABLED",
+          "RATE_LIMITED",
+          "SESSION_EXPIRED",
+          "PLAYER_BLOCKED",
+          "RESPONSIBLE_GAMING_BLOCK",
+          "INVALID_PLAYER_OR_SESSION",
+          "INSUFFICIENT_BALANCE",
+          "INVALID_AMOUNT",
+          "CURRENCY_MISMATCH",
+          "DUPLICATE_MISMATCH",
+          "ROUND_ALREADY_SETTLED",
+          "OPERATOR_ERROR"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "MissingSessionId": {
+        "description": "Missing session id.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "missingSessionId": {
+                "value": {
+                  "error": {
+                    "code": "MISSING_SESSION_ID",
+                    "message": "Missing sessionId"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Bad bearer token or signature.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "unauthorized": {
+                "value": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "OperatorInactive": {
+        "description": "Operator account inactive.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "operatorInactive": {
+                "value": {
+                  "error": {
+                    "code": "OPERATOR_INACTIVE",
+                    "message": "Operator inactive"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Too many launch attempts.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "rateLimited": {
+                "value": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "Too many launch attempts"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SessionValidationFailed": {
+        "description": "Partner session validation failed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "failed": {
+                "value": {
+                  "error": {
+                    "code": "SESSION_VALIDATION_FAILED",
+                    "message": "Session validation failed"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "LaunchDisabled": {
+        "description": "Launch disabled for maintenance.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "disabled": {
+                "value": {
+                  "error": {
+                    "code": "LAUNCH_DISABLED",
+                    "message": "Launch disabled"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SessionExpired": {
+        "description": "Session expired or invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "expired": {
+                "value": {
+                  "error": {
+                    "code": "SESSION_EXPIRED",
+                    "message": "Session expired"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "InvalidPlayerOrSession": {
+        "description": "Unknown player or session.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "invalid": {
+                "value": {
+                  "error": {
+                    "code": "INVALID_PLAYER_OR_SESSION",
+                    "message": "Invalid player or session"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PlayerBlocked": {
+        "description": "Player cannot play or transact.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "playerBlocked": {
+                "value": {
+                  "error": {
+                    "code": "PLAYER_BLOCKED",
+                    "message": "Player blocked"
+                  }
+                }
+              },
+              "responsibleGaming": {
+                "value": {
+                  "error": {
+                    "code": "RESPONSIBLE_GAMING_BLOCK",
+                    "message": "Player blocked by responsible gaming policy"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "OperatorError": {
+        "description": "Internal error on the partner side.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "operatorError": {
+                "value": {
+                  "error": {
+                    "code": "OPERATOR_ERROR",
+                    "message": "Operator error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

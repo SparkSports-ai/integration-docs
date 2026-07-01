@@ -2,6 +2,11 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
+@theme static {
+  --color-fd-warning: #e1ff83;
+  --color-toxic: #e1ff83;
+}
+
 /*
  * Spark brand theme — dark only.
  * Palette mirrors the Spark Mintlify docs (docs.json):
@@ -11,15 +16,18 @@
  */
 
 .dark {
-  /* lighter purple #753FE4 reads well on dark surfaces */
-  --color-fd-primary: hsl(258, 75%, 57%);
-  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  /* brand toxic green — property names, focus ring, primary surfaces */
+  --color-fd-primary: #e1ff83;
+  --color-fd-primary-foreground: hsl(258, 52%, 12%);
 
   /* hover surface: subtle purple-tinted panel with readable light text */
   --color-fd-accent: hsl(258, 28%, 20%);
   --color-fd-accent-foreground: hsl(0, 0%, 98%);
 
-  --color-fd-ring: hsl(258, 75%, 57%);
+  --color-fd-ring: #e1ff83;
+
+  /* brand toxic green */
+  --color-toxic: #e1ff83;
 }
 
 /* Lime selection highlight echoes the brand accent (#E1FF83). */
@@ -50,10 +58,38 @@
   box-shadow: none;
 }
 
+/* --- Links ---
+ * Keep default underlined links readable against the dark theme by using
+ * the brand toxic green for the underline itself.
+ */
+a {
+  text-decoration-color: #e1ff83;
+}
+
+/* --- Sidebar section headers ---
+ * Section titles come from `---Section---` separators and render as <p>
+ * inside the scroll viewport. Make them look like labels, not links:
+ * uppercase, small, muted, with a divider line above so sections are
+ * easy to scan.
+ */
+#nd-sidebar [data-radix-scroll-area-viewport] p {
+  display: block;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--color-fd-muted-foreground);
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-fd-border);
+}
+
 /* --- Table of contents ---
  * The TOC marks every on-screen heading active at once, so a filled
  * background stacks into a solid block. Use neon text + a neon scroll
- * thumb instead by scoping the primary color to the TOC. */
+ * thumb instead by scoping the primary color to the TOC.
+ */
 #nd-toc {
   --color-fd-primary: #e1ff83;
 }
@@ -64,4 +100,13 @@
 
 #nd-toc a[data-active='true'] {
   font-weight: 600;
+}
+
+/* API schema property names — toxic green (TypeTable + markdown field tables). */
+.api-type-table td:first-child {
+  color: var(--color-toxic);
+}
+
+.prose table tbody td:first-child > code {
+  color: var(--color-toxic);
 }

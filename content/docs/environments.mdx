@@ -5,28 +5,62 @@ description: Staging and production URLs for integration.
 
 Build and test against staging first. Production credentials are separate and we usually hand them over after staging sign-off.
 
-## Launch API
+## Operator integration
+
+### Launch API
 
 | Environment | Base URL |
 | --- | --- |
 | Production | `https://iframe-launcher.onrender.com` |
 | Staging | `https://iframe-launcher-staging.onrender.com` |
 
-## Game frontend (iframe)
+### Game frontend (iframe)
 
 | Environment | URL |
 | --- | --- |
 | Staging | `https://staging.spark.sparksports.ai` |
 | Production | Sent during onboarding |
 
-## What we send per environment
+### What we send per environment
 
 | Item | Description |
 | --- | --- |
-| Launch credentials | Basic Auth for `POST /api/game/launch` |
-| Callback credentials | Basic Auth for our calls to your wallet API |
+| Launch credentials | Basic Auth username and password for `POST /api/game/launch` |
+| Callback credentials | Basic Auth username and password for our calls to your wallet API |
 | Operator slug | Your operator identifier |
 | Stake limits | Min/max stake and preset amounts per currency |
 | Win caps | Max multiplier and max win amount |
+
+## Demo
+
+Try Spark without onboarding credentials:
+
+| Item | Value |
+| --- | --- |
+| URL | `https://demo.sparksports.ai` |
+| Username | `demo` |
+| Password | `sparksports!!!` |
+
+The demo is HTTP Basic Auth protected. Use the username and password when prompted in the browser.
+
+After sign-in you get the **Operator Simulator**: a walkthrough of the launch flow (session → launcher → authenticate → JWT URL → game iframe) and a live Spark lobby you can open in Mock or Live mode.
+
+![Spark Operator Simulator at demo.sparksports.ai](/images/demo-operator-simulator.png)
+
+## Aggregator integration
+
+For the [aggregator path](/docs/aggregator-integration/overview), the Spark-hosted endpoints live under the same launch API base URL:
+
+| Environment | Base URL |
+| --- | --- |
+| Production | `https://iframe-launcher.onrender.com` |
+| Staging | `https://iframe-launcher-staging.onrender.com` |
+
+| Item | Description |
+| --- | --- |
+| Inbound Bearer token | Token the aggregator sends us on `/api/upgaming/*` |
+| Hash key | Secret we use to sign wallet calls to the aggregator |
+| Provider id | The aggregator's provider id for Spark |
+| Game id | Game id used in wallet calls |
 
 Email your SparkSports contact to get staging access.

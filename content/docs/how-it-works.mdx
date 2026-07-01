@@ -3,9 +3,18 @@ title: How integration works
 description: Architecture overview for integrating Spark with your casino platform.
 ---
 
-You host session validation and wallet settlement. SparkSports hosts the launch service and the Spark iframe.
+Spark integrates with casinos in two ways. Which one you use depends on whether your casino connects directly or through an aggregator platform.
 
-## Components
+## Two integration paths
+
+| Path | Who calls who | Who builds wallet endpoints |
+| --- | --- | --- |
+| [Operator integration](/docs/operator-integration/launch) | You call our launch API; we call your wallet and session endpoints | You do |
+| [Aggregator integration](/docs/aggregator-integration/overview) | The aggregator calls our launch API; we call the aggregator's wallet | The aggregator does |
+
+The rest of this page describes the operator path. For the aggregator path, see [Aggregator integration](/docs/aggregator-integration/overview).
+
+## Operator integration: components
 
 | Component | Owner | Role |
 | --- | --- | --- |
@@ -14,7 +23,7 @@ You host session validation and wallet settlement. SparkSports hosts the launch 
 | Spark game iframe | SparkSports | The game UI in your lobby |
 | Your wallet API | You | Debits stakes, credits wins, handles rollbacks |
 
-## Launch flow
+## Operator integration: launch flow
 
 A player clicks "Play Spark" in your lobby. Four steps run before the game loads.
 
@@ -24,10 +33,10 @@ sequenceDiagram
     participant Backend as Your backend
     participant Spark as SparkSports
     Player->>Backend: Clicks Play Spark
-    Backend->>Spark: POST /api/game/launch
-    Spark->>Backend: POST /api/generic/authenticate
+    Backend->>Spark: POST /api/game/launch (Basic Auth)
+    Spark->>Backend: POST /api/generic/authenticate (Basic Auth)
     Backend-->>Spark: Player profile
-    Spark-->>Backend: url + expiresIn
+    Spark-->>Backend: url
     Backend-->>Player: Loads Spark in iframe
 ```
 
@@ -56,28 +65,34 @@ If the session is valid, we return the iframe URL:
 
 ```json
 {
-  "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
-  "expiresIn": 30
+  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci..."
 }
 ```
 
-Your frontend loads that URL in an iframe. The token is short-lived, so request a new URL each session.
+| Field | Description |
+| --- | --- |
+| `url` | Full HTTPS URL to load Spark in an iframe. The `jwt` query parameter is a signed, short-lived launch token, not your player's `SessionId`. Pass this URL to your frontend and embed it immediately. |
 
-Full field tables and error codes are in [Launch the game](/docs/direct-integration/launch) and [Session validation](/docs/direct-integration/session-validation).
+<BrandCallout title="Request the URL right before embedding">
+  The token expires in about 30 seconds. Call launch synchronously when the player opens Spark, then load the `url` immediately. Do not pre-fetch or cache the URL.
+</BrandCallout>
 
-## Wallet flow
+Full field tables and error codes are in [Launch the game](/docs/operator-integration/launch) and [Session validation](/docs/operator-integration/session-validation).
+
+## Operator integration: wallet flow
 
 SparkSports calls your wallet API during play. We wait for your response before moving on.
 
-```
-Player starts streak   → Type 1 (Bet)      debit stake
-Player cashes out      → Type 2 (Win)      credit winnings
-Error / void           → Type 3 (Rollback) refund bet
+```mermaid
+flowchart LR
+    S1[Player starts streak] --> T1["Type 1 · Bet"] --> A1[Debit stake]
+    S2[Player cashes out] --> T2["Type 2 · Win"] --> A2[Credit winnings]
+    S3[Error / void] --> T3["Type 3 · Rollback"] --> A3[Refund bet]
 ```
 
-See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle](/docs/direct-integration/transaction-lifecycle).
+See [Wallet API](/docs/operator-integration/wallet-api) and [Transaction lifecycle](/docs/operator-integration/transaction-lifecycle).
 
-## Endpoints you implement
+## Operator integration: endpoints you implement
 
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
@@ -85,13 +100,30 @@ See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle
 | `/api/generic/user/{pincode}/balance` | GET | Return live balance |
 | `/api/transaction/process` | POST | Bet, win, rollback |
 
+All callback endpoints use HTTP Basic Auth with the callback credentials from onboarding.
+
 ## What SparkSports sends you
 
-| Item | Description |
+What you receive during onboarding depends on the path:
+
+| Path | Credentials |
 | --- | --- |
-| Launch credentials | HTTP Basic Auth for `POST /api/game/launch` |
-| Callback credentials | Auth we use when calling your wallet API |
-| Staging environment | For dev and QA before production |
-| Operator limits | Stake bounds, win caps, currency settings |
+| Operator integration | Basic Auth username and password for launch, and Basic Auth username and password we use when calling your wallet API |
+| Aggregator integration | A Bearer token the aggregator sends us, plus a hash key we use to sign wallet calls to the aggregator |
+
+## Limits and win caps
+
+We configure stake limits and win caps with you during onboarding. Tell us the bounds you want:
+
+| Limit | What it controls |
+| --- | --- |
+| Min stake | Lowest amount a player can bet to start a streak (per currency) |
+| Max stake | Highest amount a player can bet to start a streak (per currency) |
+| Max multiplier | Highest multiplier a streak can reach before the game force-cashes out |
+| Max win amount | Highest payout allowed for a single round, in the player's session currency |
+
+Min and max stake are set per currency. Max multiplier and max win amount are operator-wide caps we store on our side and convert into the session currency at launch.
+
+The game loads all of these when a session starts and enforces them during play. A streak ends automatically when it hits either cap, whichever comes first. Payout is `stake x multiplier`, capped at the max win amount.
 
 No SDK. Just HTTPS endpoints on both sides.
