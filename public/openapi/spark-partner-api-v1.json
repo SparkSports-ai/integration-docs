@@ -565,14 +565,6 @@
           }
         }
       },
-      "TransactionType": {
-        "type": "string",
-        "enum": [
-          "BET",
-          "WIN",
-          "ROLLBACK"
-        ]
-      },
       "WinReason": {
         "type": "string",
         "enum": [
@@ -582,6 +574,27 @@
         ]
       },
       "TransactionRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetTransactionRequest"
+          },
+          {
+            "$ref": "#/components/schemas/WinTransactionRequest"
+          },
+          {
+            "$ref": "#/components/schemas/RollbackTransactionRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "BET": "#/components/schemas/BetTransactionRequest",
+            "WIN": "#/components/schemas/WinTransactionRequest",
+            "ROLLBACK": "#/components/schemas/RollbackTransactionRequest"
+          }
+        }
+      },
+      "BetTransactionRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -595,7 +608,57 @@
         ],
         "properties": {
           "type": {
-            "$ref": "#/components/schemas/TransactionType"
+            "type": "string",
+            "enum": [
+              "BET"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Spark transaction id and idempotency key."
+          },
+          "roundId": {
+            "type": "string",
+            "description": "Spark round id."
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "WinTransactionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "amount",
+          "currency",
+          "transactionId",
+          "roundId",
+          "playerId",
+          "sessionId",
+          "betTransactionId",
+          "reason",
+          "roundFinished"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "WIN"
+            ]
           },
           "amount": {
             "$ref": "#/components/schemas/DecimalString"
@@ -619,14 +682,63 @@
           },
           "betTransactionId": {
             "type": "string",
-            "description": "Required on WIN and ROLLBACK. References the original BET transaction id."
+            "description": "References the original BET transaction id this win settles."
           },
           "reason": {
             "$ref": "#/components/schemas/WinReason"
           },
           "roundFinished": {
             "type": "boolean",
-            "description": "Required on WIN when the win closes the round."
+            "description": "True when this win closes the round."
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "RollbackTransactionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "amount",
+          "currency",
+          "transactionId",
+          "roundId",
+          "playerId",
+          "sessionId",
+          "betTransactionId"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ROLLBACK"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/DecimalString"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Spark transaction id and idempotency key."
+          },
+          "roundId": {
+            "type": "string",
+            "description": "Spark round id."
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "betTransactionId": {
+            "type": "string",
+            "description": "References the original BET transaction id this rollback reverses."
           },
           "description": {
             "type": "string"
