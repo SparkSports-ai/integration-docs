@@ -570,7 +570,7 @@
         "enum": [
           "cashout",
           "loss",
-          "cap"
+          "cap_reached"
         ]
       },
       "TransactionRequest": {

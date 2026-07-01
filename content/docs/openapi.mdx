@@ -1,17 +1,21 @@
 ---
 title: OpenAPI reference
-description: Machine-readable Spark Partner API v1 contract.
+description: Machine-readable draft of the proposed Spark Partner API v1 contract.
 ---
 
-The OpenAPI file is a machine-readable companion for the Spark Partner API v1 draft.
+<Callout type="warn">**Draft, not live.** This OpenAPI file describes the proposed v1 contract for the [operator integration](/docs/operator-integration/launch) path. The live integration uses the r0 contract documented on the operator-integration pages. Do not import this file expecting a running v1 server. See the [Changelog](/docs/changelog) for what v1 changes and why.</Callout>
+
+The OpenAPI file is a machine-readable companion for the v1 draft, for partners who want to preview the target contract in Postman, Insomnia, Stoplight, or codegen tools.
 
 - [Download OpenAPI YAML](/openapi/spark-partner-api-v1.yaml)
 - [Download OpenAPI JSON](/openapi/spark-partner-api-v1.json)
-- [Launch the game](/docs/direct-integration/launch)
-- [Session validation](/docs/direct-integration/session-validation)
-- [Wallet API](/docs/direct-integration/wallet-api)
+- [Launch the game](/docs/operator-integration/launch) (live contract)
+- [Session validation](/docs/operator-integration/session-validation) (live contract)
+- [Wallet API](/docs/operator-integration/wallet-api) (live contract)
 
-Use the OpenAPI file for endpoint paths, headers, schemas, examples, and error shapes. Use the integration docs for operational rules:
+The aggregator integration has its own contract (Spark-hosted `/api/upgaming/*` endpoints plus the aggregator's wallet surface). It is not covered by this OpenAPI file. See [Aggregator integration](/docs/aggregator-integration/overview).
+
+Use the OpenAPI file for the v1 endpoint paths, headers, schemas, examples, and error shapes. Use the integration docs for the live contract and the operational rules that OpenAPI cannot express:
 
 - settlement-once behavior
 - idempotency retention and atomic ledger handling
@@ -21,7 +25,7 @@ Use the OpenAPI file for endpoint paths, headers, schemas, examples, and error s
 
 ## Security schemes
 
-The OpenAPI spec models the launch bearer token and callback headers:
+The v1 spec models the launch bearer token and callback headers:
 
 - `Authorization: Bearer <token>`
 - `X-Spark-Signature`
@@ -34,4 +38,4 @@ The callback signature canonical string is:
 {timestamp}.{METHOD}.{path-and-query}.{rawBody}
 ```
 
-See [Wallet API authentication](/docs/direct-integration/wallet-api#authentication) for verification details.
+See [Wallet API authentication](/docs/operator-integration/wallet-api#authentication) for the live auth model.

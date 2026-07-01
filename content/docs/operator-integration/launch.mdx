@@ -1,0 +1,126 @@
+---
+title: Launch the game
+description: Request a signed iframe URL when a player opens Spark.
+---
+
+When a logged-in player opens Spark, your backend calls our launch endpoint and gets back a URL to load in an iframe.
+
+<Callout type="info">**Proposed: v1 (draft).** A future contract replaces Basic Auth with a Bearer token, adds an absolute `expiresAt` to the launch response, and uses string error codes. Not live yet. See the [Changelog](/docs/changelog).</Callout>
+
+## Endpoint
+
+| Environment | URL |
+| --- | --- |
+| Production | `POST https://iframe-launcher.onrender.com/api/game/launch` |
+| Staging | `POST https://iframe-launcher-staging.onrender.com/api/game/launch` |
+
+## Authentication
+
+HTTP Basic Auth. We give you the username and password during onboarding.
+
+```http
+POST /api/game/launch
+Authorization: Basic {base64(username:password)}
+Content-Type: application/json
+```
+
+Call this endpoint only from your backend. Launch credentials must never reach the player browser, where they can be copied and reused.
+
+## Request
+
+```json
+{
+  "SessionId": "your-player-session-id"
+}
+```
+
+<TypeTable
+  type={{
+    SessionId: {
+      description:
+        'Active player session token from your platform. We pass it to your authenticate endpoint before issuing a URL.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
+Example with curl (staging):
+
+```bash
+curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
+  -u "$LAUNCH_USER:$LAUNCH_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"your-player-session-id"}'
+```
+
+## Response
+
+```json
+{
+  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci..."
+}
+```
+
+<TypeTable
+  type={{
+    url: {
+      description:
+        'Full HTTPS URL to load Spark in an iframe. The jwt query parameter is a signed, short-lived launch token, not your player SessionId. Load this URL as the iframe src.',
+      type: 'string',
+      required: true,
+    },
+  }}
+/>
+
+<BrandCallout title="Request the URL right before embedding">
+  The token expires in about 30 seconds. Call launch synchronously when the player opens Spark, then load the `url` immediately. Do not pre-fetch or cache the URL.
+</BrandCallout>
+
+Log the launch request without the JWT query string. Treat the returned `url` as sensitive until it expires.
+
+## Embed the game
+
+Put the URL in an iframe:
+
+```html
+<iframe
+  src="https://spark.sparksports.ai/game/sparksports?jwt=..."
+  width="100%"
+  height="700"
+  frameborder="0"
+  allow="fullscreen"
+></iframe>
+```
+
+1200 x 800 px works well as a max size. The UI scales down from there.
+
+Recommended iframe attributes:
+
+- Use `allow="fullscreen"` only; do not grant camera, microphone, geolocation, clipboard, or payment permissions.
+- Set the parent page `referrer-policy` to `strict-origin-when-cross-origin` or stricter.
+- Use `frame-src` / `child-src` in your Content Security Policy to allow only the Spark iframe origins we give you.
+- Do not put the launch URL in analytics events, frontend logs, crash reports, or support screenshots.
+
+## Errors
+
+Error responses use this JSON shape:
+
+```json
+{
+  "error": "BadRequest",
+  "message": "Missing required field: SessionId"
+}
+```
+
+| HTTP | `error` | When |
+| --- | --- | --- |
+| `400` | `BadRequest` | Missing `SessionId` |
+| `401` | `Unauthorized` | Bad launch credentials |
+| `403` | `Forbidden` | Operator account inactive |
+| `401` / `404` / `500` / ... | `OperatorAuthFailed` | Your [authenticate](/docs/operator-integration/session-validation) endpoint returned non-2xx. We return that same HTTP status with `error: "OperatorAuthFailed"`. Your `ErrorCode` is logged, not returned in the body |
+| `502` | `OperatorUnreachable` | Could not reach your authenticate endpoint (network failure) |
+| `502` | `OperatorAuthInvalid` | Your authenticate returned 200 but was missing `SessionId` or `Pincode` |
+| `503` | `MAINTENANCE_MODE` | Launch disabled (maintenance) |
+
+Any 2xx is accepted as success.

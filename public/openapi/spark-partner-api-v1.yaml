@@ -370,7 +370,7 @@ components:
           $ref: '#/components/schemas/Currency'
     WinReason:
       type: string
-      enum: [cashout, loss, cap]
+      enum: [cashout, loss, cap_reached]
     TransactionRequest:
       oneOf:
         - $ref: '#/components/schemas/BetTransactionRequest'

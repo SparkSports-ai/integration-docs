@@ -3,8 +3,10 @@
   "pages": [
     "index",
     "how-it-works",
-    "---Direct Integration---",
-    "...direct-integration",
+    "---Operator integration---",
+    "...operator-integration",
+    "---Aggregator integration---",
+    "...aggregator-integration",
     "---Reference---",
     "openapi",
     "environments",

@@ -12,7 +12,7 @@ Clarifications to the current live (r0) contract. None of these are API changes.
 | Area | Change |
 | --- | --- |
 | Docs | Retry policy: we retry only on `ErrorCode: 99`, up to 3 total attempts with 1s and 2s delays. Network failures and 5xx without `ErrorCode: 99` are not retried. |
-| Docs | `RoundId` is not a UUID. Format is `streak_` followed by 12 hex characters, one per streak. |
+| Docs | `RoundId` is a UUID. One is generated per streak. |
 | Docs | Number precision: `Amount`, `Balance`, and `CurrentBalance` are JSON numbers with two decimal places. Do not send integer cents or strings. |
 | Docs | Concurrency: we may call your wallet for the same player concurrently. Handle per-player concurrency safely. |
 | Docs | Launch errors: `OperatorAuthFailed` returns your authenticate endpoint's HTTP status. Added `OperatorUnreachable` and `OperatorAuthInvalid` (both 502). |
@@ -32,10 +32,10 @@ Proposed modernization of the integration contract. Consolidates our direct-oper
 - **Linkage:** `WIN` / `ROLLBACK` reference the originating `BET` via `betTransactionId`. Losing round-close carries `reason` + `roundFinished`.
 - **Naming:** one consistent `playerId` (was `Pincode` / `PinCode`); `transactionId` (was `ExternalTransactionId`); dropped the constant `GameId`.
 - **Session profile:** optional `limits` let operators narrow stake bounds at launch; the stricter of configured limits and session limits applies.
-- **Launch:** `expiresAt` (absolute UNIX timestamp) instead of `expiresIn` (relative seconds); corrected the inaccurate "single-use" claim.
+- **Launch:** adds `expiresAt` (absolute UNIX timestamp) to the response; corrected the inaccurate "single-use" claim.
 - **Idempotency, timeouts:** specified precisely (dedupe key, mismatch handling, durable dedupe retention, concurrent duplicate behavior, 10s wallet timeout).
 - **Docs:** Mermaid diagrams for every flow.
 
 ## r0: current live contract
 
-The r0 direct integration: HTTP Basic Auth, numeric `Type` (`1`/`2`/`3`), numeric `ErrorCode`, no currency on transactions, `expiresIn`. Still what live operators use until v1 ships. We will keep a compatibility appendix for them.
+The r0 direct integration: HTTP Basic Auth, numeric `Type` (`1`/`2`/`3`), numeric `ErrorCode`, no currency on transactions, launch response `{ url }`. Still what live operators use until v1 ships. We will keep a compatibility appendix for them.

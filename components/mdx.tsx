@@ -39,7 +39,7 @@ type ApiTypeField = {
  */
 function ApiTypeTable({ type }: { type: Record<string, ApiTypeField> }) {
   return (
-    <div className="not-prose my-4 overflow-x-auto rounded-lg border border-fd-border">
+    <div className="api-type-table not-prose my-4 overflow-x-auto rounded-lg border border-fd-border">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="bg-fd-muted/50 text-fd-muted-foreground">
@@ -54,7 +54,7 @@ function ApiTypeTable({ type }: { type: Record<string, ApiTypeField> }) {
               key={name}
               className={index > 0 ? 'border-t border-fd-border' : undefined}
             >
-              <td className="whitespace-nowrap px-4 py-2.5 align-top font-mono text-[13px] font-medium text-fd-primary">
+              <td className="whitespace-nowrap px-4 py-2.5 align-top font-mono text-[13px] font-medium text-toxic">
                 {name}
                 {field.required !== true && (
                   <span className="text-fd-muted-foreground">?</span>

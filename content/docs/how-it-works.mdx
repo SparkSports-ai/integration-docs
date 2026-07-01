@@ -3,9 +3,18 @@ title: How integration works
 description: Architecture overview for integrating Spark with your casino platform.
 ---
 
-You host session validation and wallet settlement. SparkSports hosts the launch service and the Spark iframe.
+Spark integrates with casinos in two ways. Which one you use depends on whether your casino connects directly or through an aggregator platform.
 
-## Components
+## Two integration paths
+
+| Path | Who calls who | Who builds wallet endpoints |
+| --- | --- | --- |
+| [Operator integration](/docs/operator-integration/launch) | You call our launch API; we call your wallet and session endpoints | You do |
+| [Aggregator integration](/docs/aggregator-integration/overview) | The aggregator calls our launch API; we call the aggregator's wallet | The aggregator does |
+
+The rest of this page describes the operator path. For the aggregator path, see [Aggregator integration](/docs/aggregator-integration/overview).
+
+## Operator integration: components
 
 | Component | Owner | Role |
 | --- | --- | --- |
@@ -14,45 +23,41 @@ You host session validation and wallet settlement. SparkSports hosts the launch 
 | Spark game iframe | SparkSports | The game UI in your lobby |
 | Your wallet API | You | Debits stakes, credits wins, handles rollbacks |
 
-## Launch flow
+## Operator integration: launch flow
 
 A player clicks "Play Spark" in your lobby. Four steps run before the game loads.
 
 ```mermaid
 sequenceDiagram
-    participant Client
+    participant Player
     participant Backend as Your backend
     participant Spark as SparkSports
     Player->>Backend: Clicks Play Spark
-    Backend->>Spark: POST /api/game/launch (Bearer)
-    Spark->>Backend: POST /api/generic/authenticate (Bearer + signature)
-    Backend-->>Spark: Player profile + currency + optional limits
-    Spark-->>Backend: url + expiresAt
+    Backend->>Spark: POST /api/game/launch (Basic Auth)
+    Spark->>Backend: POST /api/generic/authenticate (Basic Auth)
+    Backend-->>Spark: Player profile
+    Spark-->>Backend: url
     Backend-->>Player: Loads Spark in iframe
 ```
 
-Your backend calls `POST /api/game/launch` with a Bearer token:
+Your backend calls `POST /api/game/launch` with HTTP Basic Auth:
 
 ```json
 {
-  "sessionId": "your-player-session-id"
+  "SessionId": "your-player-session-id"
 }
 ```
 
-We validate that session by calling your `POST /api/generic/authenticate` with the same `sessionId`. Your endpoint returns the player profile:
+We validate that session by calling your `POST /api/generic/authenticate` with the same `SessionId`. Your endpoint returns the player profile:
 
 ```json
 {
-  "sessionId": "your-player-session-id",
-  "playerId": "player-unique-id",
-  "username": "john_doe",
-  "balance": "1500.00",
-  "currency": "USD",
-  "country": "US",
-  "limits": {
-    "minStake": "1.00",
-    "maxStake": "100.00"
-  }
+  "SessionId": "your-player-session-id",
+  "Pincode": "player-unique-id",
+  "Username": "john_doe",
+  "Balance": 1500.00,
+  "Currency": "USD",
+  "Country": "US"
 }
 ```
 
@@ -60,50 +65,53 @@ If the session is valid, we return the iframe URL:
 
 ```json
 {
-  "url": "https://staging.spark.sparksports.ai/game/sparksports?jwt=eyJhbGci...",
-  "expiresAt": 1782763200
+  "url": "https://spark.sparksports.ai/game/sparksports?jwt=eyJhbGci..."
 }
 ```
 
 | Field | Description |
 | --- | --- |
-| `url` | Full HTTPS URL to load Spark in an iframe. The `jwt` query parameter is a signed, short-lived launch token, not your player's `sessionId`. Pass this URL to your frontend and embed it immediately. |
-| `expiresAt` | Token expiry as a UNIX timestamp in seconds. Same value as the JWT `exp` claim. After it expires the URL is rejected; call launch again for a fresh one. |
+| `url` | Full HTTPS URL to load Spark in an iframe. The `jwt` query parameter is a signed, short-lived launch token, not your player's `SessionId`. Pass this URL to your frontend and embed it immediately. |
 
-Full field tables and error codes are in [Launch the game](/docs/direct-integration/launch) and [Session validation](/docs/direct-integration/session-validation).
+<BrandCallout title="Request the URL right before embedding">
+  The token expires in about 30 seconds. Call launch synchronously when the player opens Spark, then load the `url` immediately. Do not pre-fetch or cache the URL.
+</BrandCallout>
 
-## Wallet flow
+Full field tables and error codes are in [Launch the game](/docs/operator-integration/launch) and [Session validation](/docs/operator-integration/session-validation).
+
+## Operator integration: wallet flow
 
 SparkSports calls your wallet API during play. We wait for your response before moving on.
 
 ```mermaid
 flowchart LR
-    A[Player starts streak] --> B["BET (debit stake)"]
-    C[Player cashes out] --> D["WIN (credit winnings)"]
-    E[Error or void] --> F["ROLLBACK (refund bet)"]
+    S1[Player starts streak] --> T1["Type 1 · Bet"] --> A1[Debit stake]
+    S2[Player cashes out] --> T2["Type 2 · Win"] --> A2[Credit winnings]
+    S3[Error / void] --> T3["Type 3 · Rollback"] --> A3[Refund bet]
 ```
 
-See [Wallet API](/docs/direct-integration/wallet-api) and [Transaction lifecycle](/docs/direct-integration/transaction-lifecycle).
+See [Wallet API](/docs/operator-integration/wallet-api) and [Transaction lifecycle](/docs/operator-integration/transaction-lifecycle).
 
-## Endpoints you implement
+## Operator integration: endpoints you implement
 
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
 | `/api/generic/authenticate` | POST | Validate player session at launch |
-| `/api/generic/user/{playerId}/balance` | GET | Return live balance |
+| `/api/generic/user/{pincode}/balance` | GET | Return live balance |
 | `/api/transaction/process` | POST | Bet, win, rollback |
 
-Your callback endpoints use Bearer auth plus `X-Spark-Signature`, `X-Spark-Timestamp`, and `X-Spark-Request-Id`.
+All callback endpoints use HTTP Basic Auth with the callback credentials from onboarding.
 
 ## What SparkSports sends you
 
-| Item | Description |
+What you receive during onboarding depends on the path:
+
+| Path | Credentials |
 | --- | --- |
-| Launch credentials | Bearer token for `POST /api/game/launch` |
-| Callback credentials | Bearer token + HMAC-SHA256 signing secret for our calls to your callback endpoints |
-| Staging environment | For dev and QA before production |
-| Stake limits | Minimum and maximum stake per currency, plus preset amounts for the in-game stake picker |
-| Win caps | Maximum streak multiplier and maximum payout amount per round |
+| Operator integration | Basic Auth username and password for launch, and Basic Auth username and password we use when calling your wallet API |
+| Aggregator integration | A Bearer token the aggregator sends us, plus a hash key we use to sign wallet calls to the aggregator |
+
+## Limits and win caps
 
 We configure stake limits and win caps with you during onboarding. Tell us the bounds you want:
 
@@ -116,6 +124,6 @@ We configure stake limits and win caps with you during onboarding. Tell us the b
 
 Min and max stake are set per currency. Max multiplier and max win amount are operator-wide caps we store on our side and convert into the session currency at launch.
 
-The game loads all of these when a session starts and enforces them during play. A streak ends automatically when it hits either cap, whichever comes first. Payout is `stake × multiplier`, capped at the max win amount.
+The game loads all of these when a session starts and enforces them during play. A streak ends automatically when it hits either cap, whichever comes first. Payout is `stake x multiplier`, capped at the max win amount.
 
 No SDK. Just HTTPS endpoints on both sides.

@@ -1,54 +1,104 @@
 ---
 title: Testing checklist
-description: Verify your integration before production go-live.
+description: Verify your operator integration before production go-live.
 ---
 
-Run through this in staging before asking for production keys.
+This checklist is for the [operator integration](/docs/operator-integration/launch) path. If you integrate through an aggregator, you do not build these endpoints; see [Aggregator integration](/docs/aggregator-integration/overview).
+
+Run through this in staging before asking for production keys. Replace the `$LAUNCH_*`, `$CALLBACK_*`, `$PINCODE`, and `$SESSION_ID` placeholders with your staging values.
 
 ## Launch
 
-- [ ] Valid session returns a game URL with `expiresAt`
-- [ ] Bad bearer token returns `401 UNAUTHORIZED`
-- [ ] Missing `sessionId` returns `400 MISSING_SESSION_ID`
+**Valid session returns a game URL**
+
+Call launch with a real session. Expect a 200 with `url` in the body.
+
+```bash
+curl -X POST https://iframe-launcher-staging.onrender.com/api/game/launch \
+  -u "$LAUNCH_USER:$LAUNCH_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"<valid-session>"}'
+```
+
+- [ ] Valid session returns `url`
+- [ ] Bad Basic Auth returns `401 Unauthorized`
+- [ ] Missing `SessionId` returns `400 BadRequest`
 - [ ] Launch endpoint is not callable from browser code with exposed credentials
 - [ ] Full launch URL and JWT are absent from frontend logs, analytics, and crash reports
-- [ ] Support tools and screenshots do not expose launch URLs, bearer tokens, signing secrets, or wallet payloads
 - [ ] Game loads in iframe on desktop
 - [ ] Game loads in iframe on mobile
 
 ## Session validation
 
-- [ ] Valid session returns player fields including `currency`
-- [ ] Expired session returns `error.code: SESSION_EXPIRED`
-- [ ] Blocked player returns `error.code: PLAYER_BLOCKED`
-- [ ] Responsible gaming block returns `error.code: RESPONSIBLE_GAMING_BLOCK`
-- [ ] Bad signature is rejected
-- [ ] `playerId` is stable and does not contain email, phone, government ID, or raw account number
-- [ ] Frozen, self-excluded, jurisdiction-blocked, and high-risk accounts cannot create playable sessions
+Replay these against your own handler to confirm it returns the right shape.
+
+**Valid session returns player fields from authenticate**
+
+Expect a 200 with `SessionId`, `Pincode`, `Username`, `Balance`, `Currency`, and optionally `Country`.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/generic/authenticate" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionId":"<valid-session>"}'
+```
+
+- [ ] Valid session returns `SessionId`, `Pincode`, `Username`, `Balance`, `Currency`
+- [ ] Expired session returns `ErrorCode: 102`
+- [ ] Blocked player returns `ErrorCode: 111`
+- [ ] `Country` is optional; `Balance`, `Username`, and `Currency` are required
+- [ ] Frozen, self-excluded, and jurisdiction-blocked accounts cannot create playable sessions
 
 ## Wallet
 
-- [ ] `BET` debits the right amount in the right `currency`
-- [ ] `WIN` credits the right amount
-- [ ] `WIN` amount `0` with `reason: loss` closes a losing round
-- [ ] `ROLLBACK` refunds the original bet (matched by `betTransactionId`)
-- [ ] Duplicate `transactionId` is idempotent (same response, no double move)
-- [ ] Reused `transactionId` with a different amount returns `DUPLICATE_MISMATCH`
-- [ ] Same `transactionId` submitted concurrently creates one wallet movement
-- [ ] `WIN` or `ROLLBACK` after round settlement returns `ROUND_ALREADY_SETTLED`
-- [ ] Wrong currency returns `CURRENCY_MISMATCH`
-- [ ] Insufficient balance returns `400 INSUFFICIENT_BALANCE`
-- [ ] Balance endpoint returns `balance` and `currency` matching wallet state
-- [ ] Valid signature accepted, tampered body rejected
-- [ ] Request with old timestamp is rejected
-- [ ] Timeout followed by retry returns the applied transaction if money moved
-- [ ] Wallet service restart or pod failover does not lose idempotency state
+Replay these against your own handler. Use a fresh `ExternalTransactionId` for each call.
+
+**Type 1 debits the right amount**
+
+Send a bet. Expect a 200 with `TransactionId`, `CurrentBalance` (reduced by the stake), and the echoed `ExternalTransactionId`.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"Amount":10.00,"Type":1,"ExternalTransactionId":"tx-1","Description":"bet","GameId":"sparksports","RoundId":"<uuid>","PinCode":"<pin>","SessionId":"<session>"}'
+```
+
+**Type 2 with amount `0` on loss**
+
+Send a zero-amount win. Expect a 200 and `CurrentBalance` unchanged.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"Amount":0,"Type":2,"ExternalTransactionId":"tx-3","Description":"loss","GameId":"sparksports","RoundId":"<uuid>","PinCode":"<pin>","SessionId":"<session>"}'
+```
+
+**Type 3 refunds the original bet**
+
+Send a rollback. Expect `CurrentBalance` restored to the pre-bet value.
+
+```bash
+curl -X POST "$CALLBACK_BASE/api/transaction/process" \
+  -u "$CALLBACK_USER:$CALLBACK_PASS" -H "Content-Type: application/json" \
+  -d '{"Amount":10.00,"Type":3,"ExternalTransactionId":"tx-4","Description":"rollback","GameId":"sparksports","RoundId":"<uuid>","PinCode":"<pin>","SessionId":"<session>"}'
+```
+
+- [ ] Type 1 debits the right amount
+- [ ] Type 2 credits the right amount
+- [ ] Type 2 with amount `0` on loss closes the round without crediting
+- [ ] Type 3 refunds the full original stake, never a partial amount
+- [ ] Duplicate `ExternalTransactionId` is idempotent (same `TransactionId` and `CurrentBalance`, no second move)
+- [ ] Insufficient balance returns `ErrorCode: 104`
+- [ ] Balance endpoint returns `Balance` matching wallet state
+- [ ] Concurrent calls for the same player are handled safely (balance read during a bet, bets for two streaks)
 
 ## End-to-end
 
-- [ ] Launch, bet, cashout, win lands on balance
-- [ ] Launch, bet, loss, round closes with `WIN` amount `0`
-- [ ] Bet rolled back on void
-- [ ] All wallet logs include `X-Spark-Request-Id`, `transactionId`, `roundId`, and `playerId`
+These run through the live game, not curl.
+
+- [ ] Launch, bet, cashout, win reflected in balance
+- [ ] Launch, bet, loss, round closed (Type 2 amount `0`)
+- [ ] Bet rolled back on void (Type 3)
+- [ ] All wallet logs include `ExternalTransactionId`, `RoundId`, `PinCode`, and `SessionId`
 
 When staging looks good, ping your SparkSports contact for production provisioning.

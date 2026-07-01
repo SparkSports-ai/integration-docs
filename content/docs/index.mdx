@@ -3,50 +3,36 @@ title: Overview
 description: Integrate the Spark game into your casino platform.
 ---
 
-<Callout title="About this revision: Spark Partner API v1.0 (draft)" type="info">
-This is a **proposed v1 of the Spark integration contract**, consolidating what we
-learned running both a direct-operator (Basic Auth, numeric codes) and an aggregator
-(Bearer, signed callbacks) integration into one clean API.
-
-**What changed and why:**
-- **Bearer auth + signed callbacks** instead of Basic Auth. Callback signatures bind
-  timestamp, method, path, and raw body with HMAC-SHA256.
-- **Decimal-string money + currency** on every money object. Wallet calls must match the
-  session currency.
-- **Words instead of numbers** for transaction types (`BET` / `WIN` / `ROLLBACK`) and
-  for error codes (`INSUFFICIENT_BALANCE`, `SESSION_EXPIRED`, ...), so the wire is
-  self-documenting.
-- **Explicit linkage**: a `WIN` / `ROLLBACK` references the originating `BET`, and a
-  round-close carries a `reason` (`cashout` / `loss` / `cap`). A closed round cannot be
-  settled again.
-- **Durable idempotency, stated timeouts, and timeout-after-apply retry behavior** for
-  wallet calls.
-
-Items tagged **Proposed** below require backend work before they go live. Live
-integrations keep using the current contract until v1 ships. See the
-[Changelog](/docs/changelog) for revision history.
-
-</Callout>
+<Callout type="info">**A v1 contract is in draft.** It replaces Basic Auth with Bearer plus signed callbacks, numeric types with `BET`/`WIN`/`ROLLBACK`, and numeric error codes with strings. It is not live yet. See the [Changelog](/docs/changelog).</Callout>
 
 Spark is SparkSports' live sports streak game. Players pick outcomes across consecutive live markets, build a multiplier, and cash out before the streak ends.
 
-If you operate a casino platform, you need three pieces in place:
+There are two ways to integrate. Which one applies to you depends on whether your casino connects to Spark directly or through an aggregator platform.
 
-1. A way to request a game URL when a player opens Spark
-2. An endpoint that confirms the player session is still valid
-3. Wallet endpoints that handle bets, wins, and rollbacks
+## Two ways to integrate
 
-There is no SDK and no webhooks. Everything runs over HTTPS with plain request/response calls.
+### Operator integration
+
+You connect your casino backend directly to Spark. You host the wallet and session-validation endpoints we call, and you call our launch endpoint to get a game URL. This is the path for a casino that owns its own wallet and player account system.
+
+<Cards>
+  <Card title="Operator integration: launch" href="/docs/operator-integration/launch" description="Get a Spark iframe URL" />
+  <Card title="Operator integration: wallet API" href="/docs/operator-integration/wallet-api" description="Endpoints you host" />
+</Cards>
+
+### Aggregator integration
+
+Your casino sits behind an aggregator platform such as Upgaming. The platform handles the integration with Spark. You build no wallet or session endpoints. The aggregator calls Spark, and Spark calls the aggregator's wallet.
+
+<Cards>
+  <Card title="Aggregator integration" href="/docs/aggregator-integration/overview" description="For platforms like Upgaming" />
+</Cards>
+
+If you are not sure which path applies, ask your SparkSports contact. If your casino runs on a platform that already integrates with Spark, you are on the aggregator path and do not build anything in these docs.
 
 ## Player experience
 
-Spark loads in an iframe in your lobby. The browser only gets a short-lived launch URL. Wallet credentials stay on your backend.
-
-<Cards>
-  <Card title="How integration works" href="/docs/how-it-works" description="Who calls what, and when" />
-  <Card title="Launch the game" href="/docs/direct-integration/launch" description="Get a Spark iframe URL" />
-  <Card title="Wallet API" href="/docs/direct-integration/wallet-api" description="Endpoints you host" />
-</Cards>
+Spark loads in an iframe in your lobby. The browser only gets a short-lived launch URL. Wallet credentials stay on your backend (operator path) or on the aggregator (aggregator path).
 
 ## Getting set up
 

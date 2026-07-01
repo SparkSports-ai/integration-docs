@@ -14,11 +14,14 @@ The site currently has one section, the docs tree under `content/docs/`. To add 
 integration-docs/
 ├── app/                    # Next.js App Router (layouts, docs routes, search)
 ├── content/docs/           # MDX documentation source (edit here)
+│   ├── operator-integration/   # Direct path: operator builds callbacks
+│   └── aggregator-integration/ # Aggregator path: platform fronts the casino
 ├── components/mdx.tsx      # Shared MDX component map
 ├── lib/
 │   ├── source.ts           # Fumadocs content loader
 │   ├── layout.shared.tsx   # Docs shell options (nav title, etc.)
 │   └── shared.ts           # App name, routes, git config
+├── public/openapi/         # Proposed v1 OpenAPI (operator path, draft)
 ├── source.config.ts        # Fumadocs MDX config (content dir)
 ├── proxy.ts                # Markdown content negotiation
 └── render.yaml             # Render deployment blueprint
@@ -46,7 +49,7 @@ The `[MDX] generated files` line during `dev` / `build` is normal Fumadocs outpu
 - Every page needs YAML frontmatter with `title` and `description`.
 - Update `content/docs/meta.json` (and folder-level `meta.json` files) to control sidebar order.
 - Use Fumadocs MDX components where helpful: `<Cards>`, `<Card>`, `<Callout>`, etc.
-- Internal links use paths like `/docs/direct-integration/launch`.
+- Internal links use paths like `/docs/operator-integration/launch`.
 
 After content changes, verify locally with `bun run dev` before pushing.
 
@@ -70,7 +73,7 @@ Run a quick self-check before finishing: read the paragraph aloud. If it sounds 
 
 ## Audience
 
-Casino operator backend teams implementing the Spark integration with SparkSports. Write for engineers building launch and wallet callback endpoints, not for end players.
+Casino operator backend teams and aggregator platform teams integrating Spark with SparkSports. Write for engineers building or calling launch and wallet endpoints, not for end players. A downstream casino on an aggregator platform builds nothing; tell those readers to stop and talk to their platform.
 
 ## Terminology
 
@@ -78,9 +81,10 @@ Casino operator backend teams implementing the Spark integration with SparkSport
 | --- | --- |
 | **SparkSports** | The company (us, the provider) |
 | **Spark** | The game product, a live sports streak game |
-| **Operator / casino** | The integrating partner |
+| **Operator integration** | Direct path: the casino builds the callback endpoints we call |
+| **Aggregator integration** | Platform path: an aggregator platform (Upgaming today) fronts the casino; we host endpoints the aggregator calls |
 | **Launch API** | SparkSports endpoint that returns a Spark iframe URL |
-| **Callback / wallet API** | Endpoints the operator exposes for session validation and transactions |
+| **Callback / wallet API** | Endpoints the operator (operator path) or aggregator (aggregator path) exposes |
 | **playerId** | Operator's stable player identifier (returned from authenticate) |
 | **sessionId** | Operator's active player session token |
 | **roundId** | UUID identifying one game round |
@@ -98,17 +102,21 @@ Casino operator backend teams implementing the Spark integration with SparkSport
 
 **Include**
 
-- Direct operator integration: launch, session validation, wallet API, transaction lifecycle
+- Operator integration: launch, session validation, wallet API, transaction lifecycle
+- Aggregator integration: the endpoints we host, the wallet surface we call, onboarding deliverables
 - Environments (staging vs production URLs)
 - Security requirements and testing checklist
-- Onboarding deliverables (credentials, limits) described generically
+- Onboarding deliverables (credentials, limits) described by path
 
 Use **Spark** for the game. Use **SparkSports** for the company, our APIs, or our services.
 
+**Naming integration platforms**
+
+- Name an aggregator platform when its wire contract is platform-specific and the reader needs to recognize it. Upgaming is named on the aggregator pages because the hosted endpoints and SHA-512 wallet surface are Upgaming's, not generic.
+- Do not name a platform as a marketing reference. The operator-integration pages stay generic (no "BetLive-style") because that contract is reusable by any direct operator.
+
 **Do not include**
 
-- Aggregator or third-party platform integration paths
-- Names of specific partners, resellers, or routing platforms
 - Internal SparkSports architecture (NATS, game-engine, edge-api player APIs)
 - Credentials, secrets, bearer tokens, or real staging/production keys
 - `.env` values or admin API keys
