@@ -334,7 +334,7 @@ Request body:
 | Field | Type | Description |
 | --- | --- | --- |
 | `type` | string | `BET` (debit), `WIN` (credit), `ROLLBACK` (refund) |
-| `amount` | decimal string | Always positive. `0` is valid on a `WIN` that closes a losing round |
+| `amount` | decimal string | Always positive for `BET`, winning `WIN`, and `ROLLBACK`. `0` is valid only on a `WIN` with `reason: loss` and `roundFinished: true`. For `ROLLBACK`, it must equal the original `BET.amount` |
 | `currency` | string | ISO 4217 of the amount |
 | `transactionId` | string | Our transaction id. Idempotency key |
 | `roundId` | string | UUID for the round |
@@ -353,9 +353,11 @@ Request body:
 - `WIN` must reference the original `BET` with `betTransactionId`.
 - `WIN` with `reason: loss` must have `amount: "0"` and `roundFinished: true`.
 - `WIN` with `reason: cashout` or `reason: cap` credits `amount` and closes the round when `roundFinished: true`.
-- `ROLLBACK` must reference the original `BET` with `betTransactionId` and refund exactly that bet amount.
+- `ROLLBACK` must reference the original `BET` with `betTransactionId`; `amount` must equal the original `BET.amount` and the refund must be full, not partial.
 - `currency` must match the player session currency and the original `BET`.
 - Reject duplicate settlement: after a round has a closing `WIN` or `ROLLBACK`, another settlement for the same `BET` must not move money.
+
+{/* v1: clarified rollback amount semantics while keeping amount required. WHY: a rollback should be self-contained and signed with the money value being refunded, but it must not become a partial-refund mechanism. The partner should verify amount against the original BET and reject mismatch. */}
 
 {/* v1: NEW fields betTransactionId, reason, roundFinished. WHY: (1) a WIN/ROLLBACK never referenced the originating BET before, so settlement/audit could not link them. (2) reason + roundFinished make the amount=0 loss-close self-documenting instead of a bare zero. This mirrors Upgaming's isroundfinished + reason, which their spec requires. GameId was dropped: it was a constant "sparksports" shipped in every call, pure noise. */}
 

@@ -448,6 +448,7 @@ components:
           enum: [ROLLBACK]
         amount:
           $ref: '#/components/schemas/DecimalString'
+          description: Must equal the original BET amount. Rollback refunds the full original bet, never a partial amount.
         currency:
           $ref: '#/components/schemas/Currency'
         transactionId:
